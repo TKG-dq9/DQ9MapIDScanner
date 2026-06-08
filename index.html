@@ -18,7 +18,6 @@
     let buffer = [];
     const BUFFER_SIZE = 5;
     
-    // Store the most recently decoded URL so the button can use it
     let currentDecodedUrl = "";
 
     // 1. start camera
@@ -28,7 +27,6 @@
             video.play(); 
         });
 
-    // 2. wait until video is actually ready
     function waitForVideo() {
         if (video.videoWidth === 0) {
             requestAnimationFrame(waitForVideo); 
@@ -47,20 +45,16 @@
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         
-        // Draw the video to the canvas
         ctx.drawImage(video, 0, 0);
         
-        // --- ADDED: Define a targeting box in the center ---
-        // Make the box 80% of the canvas width
+        // Define targeting box (adjust 0.8 if you want it larger/smaller on screen)
         const boxWidth = canvas.width * 0.8; 
-        // Force the height to match an 8x4 aspect ratio (width / 2)
         const boxHeight = boxWidth * (ROWS / COLS); 
         
-        // Calculate offsets to perfectly center the box
         const offsetX = (canvas.width - boxWidth) / 2;
         const offsetY = (canvas.height - boxHeight) / 2;
 
-        // Draw the outer targeting box
+        // Draw outer targeting box
         ctx.strokeStyle = "lime";
         ctx.lineWidth = 4;
         ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
@@ -68,8 +62,8 @@
         const cellW = boxWidth / COLS;
         const cellH = boxHeight / ROWS;
         
-        // Draw visual alignment grid inside the box
-        ctx.strokeStyle = "rgba(0, 255, 0, 0.4)"; // Semi-transparent green
+        // Draw inner grid
+        ctx.strokeStyle = "rgba(0, 255, 0, 0.4)";
         ctx.lineWidth = 2;
         ctx.beginPath();
         for (let x = 1; x < COLS; x++) {
@@ -81,31 +75,47 @@
             ctx.lineTo(offsetX + boxWidth, offsetY + y * cellH);
         }
         ctx.stroke();
-        // ---------------------------------------------------
 
         let bits = [];
+        let validFrame = true; // Assume good alignment until we hit magenta
+
         for (let y = 0; y < ROWS; y++) {
             for (let x = 0; x < COLS; x++) {
-                // Calculate the exact center of each cell WITHIN the targeting box
                 const px = Math.floor(offsetX + x * cellW + cellW / 2);
                 const py = Math.floor(offsetY + y * cellH + cellH / 2);
                 
-                // Draw a red dot where the scanner is sampling the color
-                ctx.fillStyle = "red";
+                // Draw Cyan dots (highly visible against Magenta/Black/White)
+                ctx.fillStyle = "cyan";
                 ctx.fillRect(px - 2, py - 2, 4, 4);
 
                 const data = ctx.getImageData(px, py, 1, 1).data;
-                // Calculate grayscale brightness
-                const brightness = (data[0] + data[1] + data[2]) / 3;
-                
-                // Assuming Black = 1 and White = 0. 
-                // If your grid is inverted (White = 1), change `< 128` to `> 128`
-                bits.push(brightness < 128 ? 1 : 0); 
+                const r = data[0], g = data[1], b = data[2];
+
+                // Detect Magenta background (High R, Low G, High B)
+                // If we see magenta, the camera is misaligned.
+                if (r > 150 && g < 120 && b > 150) {
+                    validFrame = false;
+                }
+
+                // Black is 1, White is 0
+                // We use a simple threshold: if it's generally dark, it's black.
+                const brightness = (r + g + b) / 3;
+                bits.push(brightness < 100 ? 1 : 0); 
             }
         }
         
-        buffer.push(bits);
-        if (buffer.length > BUFFER_SIZE) { buffer.shift(); }
+        // ONLY save the frame data if we didn't accidentally sample the magenta background
+        if (validFrame) {
+            buffer.push(bits);
+            if (buffer.length > BUFFER_SIZE) { buffer.shift(); }
+            
+            // Optional: Change box color to show it's successfully locked on
+            ctx.strokeStyle = "cyan";
+            ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
+        } else {
+            // Clear buffer if we lose alignment
+            buffer = [];
+        }
 
         if (buffer.length === BUFFER_SIZE) {
             const stable = majorityVote(buffer);
@@ -113,14 +123,12 @@
             const seed = parseInt(stable.slice(8,24).join(""), 2);
             const loc  = parseInt(stable.slice(24,32).join(""), 2);
             
-            // Constantly update the URL behind the scenes
             currentDecodedUrl = `https://dqix.github.io/Grotto-Searcher/?id=${rank}${seed}`;
         }
         
         requestAnimationFrame(scanLoop);
     }
 
-    // majority vote across frames
     function majorityVote(frames) {
         const result = [];
         for (let i = 0; i < frames[0].length; i++) {
@@ -133,13 +141,12 @@
         return result;
     }
 
-    // 4. Trigger the redirect ONLY when the button is pressed
     captureBtn.addEventListener("click", () => {
-        if (currentDecodedUrl) {
+        if (currentDecodedUrl && buffer.length === BUFFER_SIZE) {
             console.log("Redirecting to:", currentDecodedUrl);
             window.location.href = currentDecodedUrl;
         } else {
-            alert("Camera is still initializing, please wait a moment.");
+            alert("Please align the grid! Make sure all cyan dots are inside the black/white squares.");
         }
     });
 </script>
