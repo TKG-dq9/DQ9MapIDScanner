@@ -1,108 +1,145 @@
-<video id="cam" autoplay playsinline></video>
-<canvas id="c"></canvas>
+<video id="cam" autoplay playsinline style="display:none;"></video>
+<canvas id="c" style="width: 100%; max-width: 500px; border: 2px solid black;"></canvas>
+
+<div style="text-align: center; margin-top: 20px;">
+    <button id="captureBtn" style="padding: 15px 30px; font-size: 20px; font-weight: bold; cursor: pointer;">
+        Capture & Redirect
+    </button>
+</div>
 
 <script>
-const video = document.getElementById("cam");
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d");
+    const video = document.getElementById("cam");
+    const canvas = document.getElementById("c");
+    const ctx = canvas.getContext("2d");
+    const captureBtn = document.getElementById("captureBtn");
+    
+    const COLS = 8;
+    const ROWS = 4;
+    let buffer = [];
+    const BUFFER_SIZE = 5;
+    
+    // Store the most recently decoded URL so the button can use it
+    let currentDecodedUrl = "";
 
-const COLS = 8;
-const ROWS = 4;
+    // 1. start camera
+    navigator.mediaDevices.getUserMedia({video: { facingMode: "environment" } })
+        .then(stream => {
+            video.srcObject = stream; 
+            video.play(); 
+        });
 
-// store multiple frames for stability
-let buffer = [];
-const BUFFER_SIZE = 5;
-
-// 1. start camera
-navigator.mediaDevices.getUserMedia({
-  video: { facingMode: "environment" }
-}).then(stream => {
-  video.srcObject = stream;
-  video.play();
-});
-
-// 2. wait until video is actually ready
-function waitForVideo() {
-  if (video.videoWidth === 0) {
-    requestAnimationFrame(waitForVideo);
-    return;
-  }
-  scanLoop();
-}
-
-video.onloadedmetadata = () => {
-  waitForVideo();
-};
-
-// 3. main loop (IMPORTANT: no setInterval)
-function scanLoop() {
-  if (video.videoWidth === 0) {
-    requestAnimationFrame(scanLoop);
-    return;
-  }
-
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-
-  ctx.drawImage(video, 0, 0);
-
-  const cellW = canvas.width / COLS;
-  const cellH = canvas.height / ROWS;
-
-  let bits = [];
-
-  for (let y = 0; y < ROWS; y++) {
-    for (let x = 0; x < COLS; x++) {
-
-      const px = Math.floor(x * cellW + cellW / 2);
-      const py = Math.floor(y * cellH + cellH / 2);
-
-      const data = ctx.getImageData(px, py, 1, 1).data;
-      const brightness = (data[0] + data[1] + data[2]) / 3;
-
-      bits.push(brightness < 128 ? 1 : 0);
+    // 2. wait until video is actually ready
+    function waitForVideo() {
+        if (video.videoWidth === 0) {
+            requestAnimationFrame(waitForVideo); 
+            return; 
+        } 
+        scanLoop(); 
     }
-  }
+    video.onloadedmetadata = () => { waitForVideo(); };
 
-  buffer.push(bits);
+    // 3. main loop
+    function scanLoop() {
+        if (video.videoWidth === 0) {
+            requestAnimationFrame(scanLoop); 
+            return; 
+        }
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        
+        // Draw the video to the canvas
+        ctx.drawImage(video, 0, 0);
+        
+        // --- ADDED: Define a targeting box in the center ---
+        // Make the box 80% of the canvas width
+        const boxWidth = canvas.width * 0.8; 
+        // Force the height to match an 8x4 aspect ratio (width / 2)
+        const boxHeight = boxWidth * (ROWS / COLS); 
+        
+        // Calculate offsets to perfectly center the box
+        const offsetX = (canvas.width - boxWidth) / 2;
+        const offsetY = (canvas.height - boxHeight) / 2;
 
-  if (buffer.length > BUFFER_SIZE) {
-    buffer.shift();
-  }
+        // Draw the outer targeting box
+        ctx.strokeStyle = "lime";
+        ctx.lineWidth = 4;
+        ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
 
-  if (buffer.length === BUFFER_SIZE) {
-    const stable = majorityVote(buffer);
+        const cellW = boxWidth / COLS;
+        const cellH = boxHeight / ROWS;
+        
+        // Draw visual alignment grid inside the box
+        ctx.strokeStyle = "rgba(0, 255, 0, 0.4)"; // Semi-transparent green
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let x = 1; x < COLS; x++) {
+            ctx.moveTo(offsetX + x * cellW, offsetY);
+            ctx.lineTo(offsetX + x * cellW, offsetY + boxHeight);
+        }
+        for (let y = 1; y < ROWS; y++) {
+            ctx.moveTo(offsetX, offsetY + y * cellH);
+            ctx.lineTo(offsetX + boxWidth, offsetY + y * cellH);
+        }
+        ctx.stroke();
+        // ---------------------------------------------------
 
-    const rank = parseInt(stable.slice(0,8).join(""), 2);
-    const seed = parseInt(stable.slice(8,24).join(""), 2);
-    const loc  = parseInt(stable.slice(24,32).join(""), 2);
+        let bits = [];
+        for (let y = 0; y < ROWS; y++) {
+            for (let x = 0; x < COLS; x++) {
+                // Calculate the exact center of each cell WITHIN the targeting box
+                const px = Math.floor(offsetX + x * cellW + cellW / 2);
+                const py = Math.floor(offsetY + y * cellH + cellH / 2);
+                
+                // Draw a red dot where the scanner is sampling the color
+                ctx.fillStyle = "red";
+                ctx.fillRect(px - 2, py - 2, 4, 4);
 
-    const url = `https://dqix.github.io/Grotto-Searcher/?id=${rank}${seed}`;
+                const data = ctx.getImageData(px, py, 1, 1).data;
+                // Calculate grayscale brightness
+                const brightness = (data[0] + data[1] + data[2]) / 3;
+                
+                // Assuming Black = 1 and White = 0. 
+                // If your grid is inverted (White = 1), change `< 128` to `> 128`
+                bits.push(brightness < 128 ? 1 : 0); 
+            }
+        }
+        
+        buffer.push(bits);
+        if (buffer.length > BUFFER_SIZE) { buffer.shift(); }
 
-    console.log("DECODED:", rank, seed, loc);
-    console.log(url);
-
-    // ONLY redirect if you want (comment for testing)
-    window.location.href = url;
-  }
-
-  requestAnimationFrame(scanLoop);
-}
-
-// majority vote across frames
-function majorityVote(frames) {
-  const result = [];
-
-  for (let i = 0; i < frames[0].length; i++) {
-    let sum = 0;
-
-    for (let f = 0; f < frames.length; f++) {
-      sum += frames[f][i];
+        if (buffer.length === BUFFER_SIZE) {
+            const stable = majorityVote(buffer);
+            const rank = parseInt(stable.slice(0,8).join(""), 2);
+            const seed = parseInt(stable.slice(8,24).join(""), 2);
+            const loc  = parseInt(stable.slice(24,32).join(""), 2);
+            
+            // Constantly update the URL behind the scenes
+            currentDecodedUrl = `https://dqix.github.io/Grotto-Searcher/?id=${rank}${seed}`;
+        }
+        
+        requestAnimationFrame(scanLoop);
     }
 
-    result.push(sum > frames.length / 2 ? 1 : 0);
-  }
+    // majority vote across frames
+    function majorityVote(frames) {
+        const result = [];
+        for (let i = 0; i < frames[0].length; i++) {
+            let sum = 0;
+            for (let f = 0; f < frames.length; f++) {
+                sum += frames[f][i];
+            }
+            result.push(sum > frames.length / 2 ? 1 : 0);
+        }
+        return result;
+    }
 
-  return result;
-}
+    // 4. Trigger the redirect ONLY when the button is pressed
+    captureBtn.addEventListener("click", () => {
+        if (currentDecodedUrl) {
+            console.log("Redirecting to:", currentDecodedUrl);
+            window.location.href = currentDecodedUrl;
+        } else {
+            alert("Camera is still initializing, please wait a moment.");
+        }
+    });
 </script>
