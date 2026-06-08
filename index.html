@@ -29,15 +29,20 @@
 
         let currentDecodedUrl = "";
 
-        // 1. Start camera stream
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-            .then(stream => {
-                video.srcObject = stream;
-                video.play();
-            })
-            .catch(err => {
-                alert("Camera error: " + err.message + "\nEnsure you are using HTTPS and have granted camera permissions.");
-            });
+        // 1. Start camera stream with flexible device fallbacks
+        navigator.mediaDevices.getUserMedia({ 
+            video: { 
+                facingMode: { ideal: "environment" } 
+            } 
+        })
+        .then(stream => {
+            video.srcObject = stream;
+            video.play();
+        })
+        .catch(err => {
+            // This alert will instantly tell us if the browser is blocking it or throwing an error
+            alert("Camera error diagnostic: " + err.name + " - " + err.message);
+        });
 
         function waitForVideo() {
             if (video.videoWidth === 0) {
@@ -154,7 +159,7 @@
                 const seedHex = seed.toString(16).toUpperCase().padStart(4, '0');
                 const locHex  = loc.toString(16).toUpperCase().padStart(2, '0');
                 
-                currentDecodedUrl = `https://dqix.github.io/Grotto-Searcher/?id=${rankHex}${seedHex}${locHex}`;
+                currentDecodedUrl = `https://dqix.github.io/Grotto-Searcher/?id=${rankHex}${seedHex}`;
             }
             
             requestAnimationFrame(scanLoop);
