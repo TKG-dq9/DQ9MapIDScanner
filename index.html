@@ -9,19 +9,19 @@
 
     <video id="cam" autoplay playsinline style="display:none;"></video>
     
-    <button id="toggleBtn" style="padding: 15px 30px; font-size: 18px; font-weight: bold; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
-        Start Scanner
-    </button>
-
-    <div style="margin-top: 20px;">
+    <div style="margin-bottom: 20px;">
         <canvas id="c" style="width: 100%; max-width: 500px; border: 2px solid #555; border-radius: 8px;"></canvas>
     </div>
 
-    <div style="margin-top: 20px; max-width: 600px; margin-left: auto; margin-right: auto; background: #333; padding: 10px; border-radius: 8px;">
-        <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 16px;">
+    <button id="toggleBtn" style="padding: 15px 30px; font-size: 18px; font-weight: bold; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 20px;">
+        Start Scanner
+    </button>
+
+    <div style="max-width: 700px; margin-left: auto; margin-right: auto; background: #333; padding: 10px; border-radius: 8px;">
+        <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 14px;">
             <thead>
                 <tr style="border-bottom: 2px solid #666; color: #00bcd4;">
-                    <th>FQ</th><th>Rank</th><th>Seed</th><th>@</th><th>MelonGx</th>
+                    <th>#</th><th>FQ</th><th>Rank</th><th>Seed</th><th>@</th><th>MelonGx</th><th>yab</th>
                 </tr>
             </thead>
             <tbody id="logBody"></tbody>
@@ -36,9 +36,7 @@
         const toggleBtn = document.getElementById("toggleBtn");
 
         const COLS = 8, ROWS = 4, BUFFER_SIZE = 5;
-        let buffer = [];
-        let stream = null;
-        let isScanning = false;
+        let buffer = [], stream = null, isScanning = false, scanCount = 0;
 
         toggleBtn.addEventListener("click", () => {
             isScanning ? stopScanner() : startScanner();
@@ -64,7 +62,6 @@
             toggleBtn.innerText = "Start Scanner";
             toggleBtn.style.background = "#4CAF50";
             isScanning = false;
-            // Clear canvas when stopped
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
@@ -81,8 +78,7 @@
 
         function scanLoop() {
             if (!isScanning) return;
-            canvas.width = video.videoWidth; 
-            canvas.height = video.videoHeight;
+            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0);
 
             const boxWidth = canvas.width * 0.8; 
@@ -116,7 +112,6 @@
                 buffer = [];
             }
 
-            // Draw Overlay
             ctx.strokeStyle = validFrame ? "cyan" : "lime";
             ctx.lineWidth = 6;
             ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
@@ -133,11 +128,14 @@
                 const seedHex = seed.toString(16).toUpperCase().padStart(4, '0');
                 const locHex = loc.toString(16).toUpperCase().padStart(2, '0');
                 
-                const url = `https://dqix.github.io/Grotto-Searcher/?id=${catHex}${seedHex}`;
+                const grottoUrl = `https://dqix.github.io/Grotto-Searcher/?id=${catHex}${seedHex}`;
+                const yabdUrl = `https://www.yabd.org/apps/dq9/grottodetails.php?map=${catHex}${seedHex}`;
                 
                 const row = logBody.insertRow(0);
-                row.innerHTML = `<td>${fqHex}</td><td>${catHex}</td><td>${seedHex}</td><td>${locHex}</td>
-                                 <td><a href="${url}" target="_blank" style="color:#ffcc00">GO</a></td>`;
+                scanCount++;
+                row.innerHTML = `<td>${scanCount}</td><td>${fqHex}</td><td>${catHex}</td><td>${seedHex}</td><td>${locHex}</td>
+                                 <td><a href="${grottoUrl}" target="_blank" style="color:#00bcd4">Link</a></td>
+                                 <td><a href="${yabdUrl}" target="_blank" style="color:#ffcc00">Link</a></td>`;
                 
                 stopScanner();
                 return; 
