@@ -43,7 +43,7 @@ function readFrame() {
   const seed = parseInt(bits.slice(8,24).join(""), 2);
   const loc  = parseInt(bits.slice(24,32).join(""), 2);
 
-  const url = `https://grotto-tool.com/?rank=${rank}&seed=${seed}&loc=${loc}`;
+  const url = `https://dqix.github.io/Grotto-Searcher/?id=${rank}${seed}`;
 
   console.log(rank, seed, loc);
   console.log(url);
