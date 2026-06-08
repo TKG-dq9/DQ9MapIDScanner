@@ -5,20 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DQ9 Map Scanner</title>
 </head>
-<body style="font-family: sans-serif; background: #222; color: #fff; margin: 0; padding: 20px; text-align: center;">
+<body style="font-family: sans-serif; background: #222; color: #fff; margin: 0; padding: 10px; text-align: center;">
 
     <video id="cam" autoplay playsinline style="display:none;"></video>
     
-    <div style="margin-bottom: 20px;">
-        <canvas id="c" style="width: 100%; max-width: 500px; border: 2px solid #555; border-radius: 8px;"></canvas>
+    <div style="margin-bottom: 10px;">
+        <canvas id="c" style="width: 100%; max-width: 360px; aspect-ratio: 4/3; border: 2px solid #555; border-radius: 8px; background: #000;"></canvas>
     </div>
 
-    <button id="toggleBtn" style="padding: 15px 30px; font-size: 18px; font-weight: bold; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 20px;">
+    <button id="toggleBtn" style="padding: 12px 24px; font-size: 16px; font-weight: bold; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 15px;">
         Start Scanner
     </button>
 
-    <div style="max-width: 700px; margin-left: auto; margin-right: auto; background: #333; padding: 10px; border-radius: 8px;">
-        <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 14px;">
+    <div style="max-width: 600px; margin-left: auto; margin-right: auto; background: #333; padding: 8px; border-radius: 8px;">
+        <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 13px;">
             <thead>
                 <tr style="border-bottom: 2px solid #666; color: #00bcd4;">
                     <th>#</th><th>FQ</th><th>Rank</th><th>Seed</th><th>@</th><th>MelonGx</th><th>yab</th>
@@ -62,7 +62,6 @@
             toggleBtn.innerText = "Start Scanner";
             toggleBtn.style.background = "#4CAF50";
             isScanning = false;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
         function categorizeRank(r) {
@@ -78,10 +77,12 @@
 
         function scanLoop() {
             if (!isScanning) return;
-            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0);
+            
+            // Maintain internal canvas resolution
+            canvas.width = 640; canvas.height = 480; 
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-            const boxWidth = canvas.width * 0.8; 
+            const boxWidth = canvas.width * 0.7; 
             const boxHeight = boxWidth * (3 / 4);
             const offsetX = (canvas.width - boxWidth) / 2; 
             const offsetY = (canvas.height - boxHeight) / 2;
@@ -113,7 +114,7 @@
             }
 
             ctx.strokeStyle = validFrame ? "cyan" : "lime";
-            ctx.lineWidth = 6;
+            ctx.lineWidth = 4;
             ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
 
             if (buffer.length === BUFFER_SIZE) {
@@ -135,7 +136,7 @@
                 scanCount++;
                 row.innerHTML = `<td>${scanCount}</td><td>${fqHex}</td><td>${catHex}</td><td>${seedHex}</td><td>${locHex}</td>
                                  <td><a href="${grottoUrl}" target="_blank" style="color:#00bcd4">Link</a></td>
-                                 <td><a href="${yabdUrl}" target="_blank" style="color:#00bcd4">Link</a></td>`;
+                                 <td><a href="${yabdUrl}" target="_blank" style="color:#ffcc00">Link</a></td>`;
                 
                 stopScanner();
                 return; 
