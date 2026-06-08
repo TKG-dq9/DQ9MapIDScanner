@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DQ9 Auto-Scanner</title>
+    <title>DQ9 Auto-Stop Scanner</title>
 </head>
 <body style="font-family: sans-serif; background: #222; color: #fff; margin: 0; padding: 20px; text-align: center;">
 
     <video id="cam" autoplay playsinline style="display:none;"></video>
-    <canvas id="c" style="width: 100%; max-width: 500px; border: 2px solid #555; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);"></canvas>
+    
+    <button id="toggleBtn" style="padding: 15px 30px; font-size: 18px; font-weight: bold; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
+        Start Scanner
+    </button>
 
-    <div style="margin-top: 20px; color: #aaa;">
-        <p>Align the grid. Scan is automatic!</p>
+    <div style="margin-top: 20px;">
+        <canvas id="c" style="width: 100%; max-width: 500px; border: 2px solid #555; border-radius: 8px;"></canvas>
     </div>
 
     <div style="margin-top: 20px; max-width: 500px; margin-left: auto; margin-right: auto; background: #333; padding: 10px; border-radius: 8px;">
@@ -30,14 +33,45 @@
         const canvas = document.getElementById("c");
         const ctx = canvas.getContext("2d");
         const logBody = document.getElementById("logBody");
+        const toggleBtn = document.getElementById("toggleBtn");
 
         const COLS = 8, ROWS = 4, BUFFER_SIZE = 5;
         let buffer = [];
-        let canScan = true;
+        let stream = null;
+        let isScanning = false;
 
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } })
-            .then(stream => { video.srcObject = stream; video.play(); })
-            .catch(err => alert("Camera error: " + err.message));
+        toggleBtn.addEventListener("click", () => {
+            if (isScanning) {
+                stopScanner();
+            } else {
+                startScanner();
+            }
+        });
+
+        function startScanner() {
+            buffer = [];
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } })
+                .then(s => {
+                    stream = s;
+                    video.srcObject = s;
+                    video.play();
+                    toggleBtn.innerText = "Stop Scanner";
+                    toggleBtn.style.background = "#f44336";
+                    isScanning = true;
+                    scanLoop();
+                })
+                .catch(err => alert("Camera error: " + err.message));
+        }
+
+        function stopScanner() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            video.srcObject = null;
+            toggleBtn.innerText = "Start Scanner";
+            toggleBtn.style.background = "#4CAF50";
+            isScanning = false;
+        }
 
         function categorizeRank(r) {
             if (r >= 2 && r <= 55) return 0x02;
@@ -50,8 +84,17 @@
             return r;
         }
 
+        function majorityVote(frames) {
+            let result = [];
+            for (let i = 0; i < frames[0].length; i++) {
+                let ones = frames.reduce((acc, frame) => acc + frame[i], 0);
+                result.push(ones > frames.length / 2 ? 1 : 0);
+            }
+            return result;
+        }
+
         function scanLoop() {
-            if (video.videoWidth === 0) { requestAnimationFrame(scanLoop); return; }
+            if (!isScanning || video.videoWidth === 0) return;
             
             canvas.width = video.videoWidth; 
             canvas.height = video.videoHeight;
@@ -68,16 +111,14 @@
 
             let bits = [], validFrame = true;
 
-            // 1. Check corners for Magenta (Frame Detection)
+            // Frame Detection
             const corners = [{x:offsetX+15, y:offsetY+15}, {x:offsetX+boxWidth-15, y:offsetY+15}, 
                              {x:offsetX+15, y:offsetY+boxHeight-15}, {x:offsetX+boxWidth-15, y:offsetY+boxHeight-15}];
-            
             for (let p of corners) {
                 let d = ctx.getImageData(p.x, p.y, 1, 1).data;
                 if (!(d[0] > 130 && d[1] < 130 && d[2] > 130)) validFrame = false;
             }
 
-            // 2. Read bits if frame is valid
             if (validFrame) {
                 for (let y = 0; y < ROWS; y++) {
                     for (let x = 0; x < COLS; x++) {
@@ -85,55 +126,42 @@
                         bits.push(((d[0]+d[1]+d[2])/3) < 100 ? 1 : 0);
                     }
                 }
-            }
-
-            // 3. Process buffer and trigger action
-            if (validFrame && canScan) {
                 buffer.push(bits);
-                if (buffer.length >= BUFFER_SIZE) {
-                    const stable = majorityVote(buffer);
-                    const rawRank = parseInt(stable.slice(0,8).join(""), 2);
-                    const seed = parseInt(stable.slice(8,24).join(""), 2);
-                    const loc = parseInt(stable.slice(24,32).join(""), 2);
-                    const catRank = categorizeRank(rawRank);
-                    
-                    // Log to table
-                    const row = logBody.insertRow(0);
-                    row.innerHTML = `<td>${rawRank.toString(16).toUpperCase().padStart(2,'0')}</td>
-                                     <td style="color:#00bcd4">${catRank.toString(16).toUpperCase().padStart(2,'0')}</td>
-                                     <td>${seed.toString(16).toUpperCase().padStart(4,'0')}</td>
-                                     <td>${loc.toString(16).toUpperCase().padStart(2,'0')}</td>`;
-                    
-                    // Trigger Redirect
-                    const url = `https://dqix.github.io/Grotto-Searcher/?id=${catRank.toString(16).toUpperCase().padStart(2,'0')}${seed.toString(16).toUpperCase().padStart(4,'0')}`;
-                    window.open(url, '_blank');
-                    
-                    // Set Cooldown
-                    canScan = false;
-                    buffer = []; 
-                    setTimeout(() => { canScan = true; }, 3000);
-                }
-            } else if (!validFrame) {
-                buffer = []; // Reset if we lose focus
+                if (buffer.length > BUFFER_SIZE) buffer.shift();
+            } else {
+                buffer = [];
             }
 
-            ctx.strokeStyle = !canScan ? "yellow" : (validFrame ? "cyan" : "lime");
+            // Detection Logic
+            if (buffer.length === BUFFER_SIZE) {
+                const stable = majorityVote(buffer);
+                const rawRank = parseInt(stable.slice(0,8).join(""), 2);
+                const seed = parseInt(stable.slice(8,24).join(""), 2);
+                const loc = parseInt(stable.slice(24,32).join(""), 2);
+                const catRank = categorizeRank(rawRank);
+                
+                const rawRankHex = rawRank.toString(16).toUpperCase().padStart(2, '0');
+                const catRankHex = catRank.toString(16).toUpperCase().padStart(2, '0');
+                const seedHex = seed.toString(16).toUpperCase().padStart(4, '0');
+                const locHex = loc.toString(16).toUpperCase().padStart(2, '0');
+                
+                const url = `https://dqix.github.io/Grotto-Searcher/?id=${catRankHex}${seedHex}${locHex}`;
+                
+                const row = logBody.insertRow(0);
+                row.innerHTML = `<td>${rawRankHex}</td><td>${catRankHex}</td>
+                                 <td><a href="${url}" target="_blank" style="color:#00bcd4; text-decoration:none;">${seedHex}</a></td>
+                                 <td>${locHex}</td>`;
+                
+                stopScanner();
+                return; // Stop loop
+            }
+
+            ctx.strokeStyle = validFrame ? "cyan" : "lime";
             ctx.lineWidth = 4;
             ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
             
             requestAnimationFrame(scanLoop);
         }
-
-        function majorityVote(frames) {
-            let result = [];
-            for (let i = 0; i < frames[0].length; i++) {
-                let ones = frames.reduce((acc, frame) => acc + frame[i], 0);
-                result.push(ones > frames.length / 2 ? 1 : 0);
-            }
-            return result;
-        }
-
-        video.onloadedmetadata = () => scanLoop();
     </script>
 </body>
 </html>
