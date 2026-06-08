@@ -21,7 +21,7 @@
         <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 13px;">
             <thead>
                 <tr style="border-bottom: 2px solid #666; color: #00bcd4;">
-                    <th>#</th><th>FQ</th><th>Rank</th><th>Seed</th><th>Loc</th><th>MelonGx</th><th>yab</th>
+                    <th>#</th><th>FQ</th><th>Rank</th><th>Seed</th><th>@</th><th>MelonGx</th><th>yab</th>
                 </tr>
             </thead>
             <tbody id="logBody"></tbody>
@@ -78,27 +78,36 @@
         function scanLoop() {
             if (!isScanning) return;
             
-            // Set canvas to match the actual camera feed resolution
-            if (canvas.width !== video.videoWidth) {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
+            // 1. Maintain canvas internal resolution at 4:3
+            if (canvas.width !== 640 || canvas.height !== 480) {
+                canvas.width = 640;
+                canvas.height = 480;
             }
-            
-            ctx.drawImage(video, 0, 0);
 
-            // Use the canvas dimensions for all math to ensure perfect alignment
+            // 2. Center-Crop logic (The "Object-Fit: Cover" equivalent)
+            const vWidth = video.videoWidth;
+            const vHeight = video.videoHeight;
+            const ratio = Math.max(canvas.width / vWidth, canvas.height / vHeight);
+            const drawW = vWidth * ratio;
+            const drawH = vHeight * ratio;
+            const dx = (canvas.width - drawW) / 2;
+            const dy = (canvas.height - drawH) / 2;
+
+            ctx.drawImage(video, dx, dy, drawW, drawH);
+
+            // Now everything else uses the canvas dimensions
             const boxWidth = canvas.width * 0.7; 
             const boxHeight = boxWidth * (3 / 4);
             const offsetX = (canvas.width - boxWidth) / 2; 
             const offsetY = (canvas.height - boxHeight) / 2;
             
             const cellW = boxWidth / COLS;
-            const cellH = cellW; // Keep cells square
+            const cellH = cellW;
             const gridOffsetY = offsetY + (boxHeight - (cellH * ROWS)) / 2;
 
             let bits = [], validFrame = true;
 
-            // Frame detection using the same aspect-correct logic
+            // Frame detection
             const corners = [{x:offsetX+15, y:offsetY+15}, {x:offsetX+boxWidth-15, y:offsetY+15}, 
                              {x:offsetX+15, y:offsetY+boxHeight-15}, {x:offsetX+boxWidth-15, y:offsetY+boxHeight-15}];
             for (let p of corners) {
@@ -119,6 +128,7 @@
                 buffer = [];
             }
 
+            // Draw Overlay
             ctx.strokeStyle = validFrame ? "cyan" : "lime";
             ctx.lineWidth = 6;
             ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
@@ -135,7 +145,7 @@
                 const seedHex = seed.toString(16).toUpperCase().padStart(4, '0');
                 const locHex = loc.toString(16).toUpperCase().padStart(2, '0');
                 
-                const grottoUrl = `https://dqix.github.io/Grotto-Searcher/?id=${catHex}${seedHex}${locHex}`;
+                const grottoUrl = `https://dqix.github.io/Grotto-Searcher/?id=${catHex}${seedHex}`;
                 const yabdUrl = `https://www.yabd.org/apps/dq9/grottodetails.php?map=${catHex}${seedHex}`;
                 
                 const row = logBody.insertRow(0);
