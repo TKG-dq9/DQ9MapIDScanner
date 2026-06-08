@@ -1,0 +1,57 @@
+<video id="cam" autoplay></video>
+<canvas id="c"></canvas>
+
+<script>
+const video = document.getElementById("cam");
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+
+// 1. start camera
+navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+.then(stream => video.srcObject = stream);
+
+// 2. define your grid
+const COLS = 8;
+const ROWS = 4;
+
+function readFrame() {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  ctx.drawImage(video, 0, 0);
+
+  const cellW = canvas.width / COLS;
+  const cellH = canvas.height / ROWS;
+
+  let bits = [];
+
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+
+      const px = Math.floor(x * cellW + cellW/2);
+      const py = Math.floor(y * cellH + cellH/2);
+
+      const data = ctx.getImageData(px, py, 1, 1).data;
+
+      const brightness = (data[0] + data[1] + data[2]) / 3;
+      bits.push(brightness < 128 ? 1 : 0);
+    }
+  }
+
+  // decode (example 32-bit layout)
+  const rank = parseInt(bits.slice(0,8).join(""), 2);
+  const seed = parseInt(bits.slice(8,24).join(""), 2);
+  const loc  = parseInt(bits.slice(24,32).join(""), 2);
+
+  const url = `https://grotto-tool.com/?rank=${rank}&seed=${seed}&loc=${loc}`;
+
+  console.log(rank, seed, loc);
+  console.log(url);
+
+  // auto redirect (or show button instead)
+  window.location.href = url;
+}
+
+// run every 2 seconds
+setInterval(readFrame, 2000);
+</script>
