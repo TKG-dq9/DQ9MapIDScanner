@@ -49,19 +49,18 @@
         
         // 1. Create the outer 4:3 Targeting Box to match the DS Screen edges
         const boxWidth = canvas.width * 0.8; 
-        const boxHeight = boxWidth * (3 / 4); // Outer box is 4:3
+        const boxHeight = boxWidth * (3 / 4); // Outer box is 4:3 (24 tiles high)
         const offsetX = (canvas.width - boxWidth) / 2;
         const offsetY = (canvas.height - boxHeight) / 2;
 
-        // 2. Center a perfect 2:1 grid of SQUARES inside the 4:3 space
-        // Based on sampleMasayuki.png, the grid is roughly 85% of the screen's width
-        const gridWidth = boxWidth * 0.95; 
+        // 2. Scale grid to 32x24 tile specs (Grid takes 100% width, centered vertically)
+        const gridWidth = boxWidth; // 8 cols * 4 tiles = 32 tiles wide (Full width)
         const cellW = gridWidth / COLS;
-        const cellH = cellW; // Forces 1:1 perfect square cells
-        const gridHeight = cellH * ROWS; // Total height of the 2:1 grid
+        const cellH = cellW; // Forces 1:1 square blocks (4x4 tiles)
+        const gridHeight = cellH * ROWS; // 4 rows * 4 tiles = 16 tiles high
         
-        // Calculate both X and Y offsets to perfectly center the grid inside the 4:3 box
-        const gridOffsetX = offsetX + (boxWidth - gridWidth) / 2;
+        const gridOffsetX = offsetX;
+        // Centers the 16-tile-high grid inside the 24-tile-high screen
         const gridOffsetY = offsetY + (boxHeight - gridHeight) / 2;
 
         let bits = [];
@@ -88,7 +87,7 @@
             ctx.fillRect(corner.x - 4, corner.y - 4, 8, 8);
         }
 
-        // 4. Read the 8x4 grid pixels using the centered grid offsets
+        // 4. Read the 8x4 grid pixels (Lands exactly in the center of the 2x2 active squares)
         for (let y = 0; y < ROWS; y++) {
             for (let x = 0; x < COLS; x++) {
                 const px = Math.floor(gridOffsetX + x * cellW + cellW / 2);
@@ -104,6 +103,51 @@
                 ctx.fillRect(px - 2, py - 2, 4, 4);
             }
         }
+
+        // 5. Draw the UI elements
+        // Outer 4:3 DS Screen border
+        ctx.strokeStyle = validFrame ? "cyan" : "lime";
+        ctx.lineWidth = 4;
+        ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
+
+        // Inner 8x4 Grid lines
+        ctx.strokeStyle = validFrame ? "rgba(0, 255, 255, 0.6)" : "rgba(0, 255, 0, 0.4)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for (let x = 1; x < COLS; x++) {
+            ctx.moveTo(gridOffsetX + x * cellW, gridOffsetY);
+            ctx.lineTo(gridOffsetX + x * cellW, gridOffsetY + gridHeight);
+        }
+        for (let y = 1; y < ROWS; y++) {
+            ctx.moveTo(gridOffsetX, gridOffsetY + y * cellH);
+            ctx.lineTo(gridOffsetX + gridWidth, gridOffsetY + y * cellH);
+        }
+        ctx.stroke();
+
+        // 6. Save to buffer only if valid
+        if (validFrame) {
+            buffer.push(bits);
+            if (buffer.length > BUFFER_SIZE) { buffer.shift(); }
+        } else {
+            buffer = []; 
+        }
+
+        // 7. Update URL if stable
+        if (buffer.length === BUFFER_SIZE) {
+            const stable = majorityVote(buffer);
+            const rank = parseInt(stable.slice(0,8).join(""), 2);
+            const seed = parseInt(stable.slice(8,24).join(""), 2);
+            const loc  = parseInt(stable.slice(24,32).join(""), 2);
+            
+            const rankHex = rank.toString(16).toUpperCase().padStart(2, '0');
+            const seedHex = seed.toString(16).toUpperCase().padStart(4, '0');
+            const locHex  = loc.toString(16).toUpperCase().padStart(2, '0');
+            
+            currentDecodedUrl = `https://dqix.github.io/Grotto-Searcher/?id=${rankHex}${seedHex}`;
+        }
+        
+        requestAnimationFrame(scanLoop);
+    }
 
         // 5. Draw the UI elements
         // Outer 4:3 DS Screen border
