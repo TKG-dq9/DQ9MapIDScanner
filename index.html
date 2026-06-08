@@ -139,8 +139,7 @@
             const seedHex = seed.toString(16).toUpperCase().padStart(4, '0');
             const locHex  = loc.toString(16).toUpperCase().padStart(2, '0');
             
-            // Combines them into a clean 8-character ID string (e.g., BB0E5C54)
-            currentDecodedUrl = `https://dqix.github.io/Grotto-Searcher/?id=${rankHex}${seedHex}${locHex}`;
+            currentDecodedUrl = `https://dqix.github.io/Grotto-Searcher/?id=${rankHex}${seedHex}`;
         }
         
         requestAnimationFrame(scanLoop);
