@@ -33,7 +33,7 @@
 
         const COLS = 8, ROWS = 4, BUFFER_SIZE = 5;
         let buffer = [];
-        let canScan = true; // Cooldown gate
+        let canScan = true;
 
         navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } })
             .then(stream => { video.srcObject = stream; video.play(); })
@@ -41,34 +41,53 @@
 
         function categorizeRank(r) {
             if (r >= 2 && r <= 55) return 0x02;
-            if (r <= 60) return 0x38;
-            if (r <= 75) return 0x3D;
-            if (r <= 80) return 0x4C;
-            if (r <= 100) return 0x51;
-            if (r <= 120) return 0x65;
-            if (r <= 140) return 0x79;
-            if (r <= 160) return 0x8D;
-            if (r <= 180) return 0xA1;
-            if (r <= 200) return 0xB5;
-            if (r <= 220) return 0xC9;
+            if (r <= 60) return 0x38; if (r <= 75) return 0x3D;
+            if (r <= 80) return 0x4C; if (r <= 100) return 0x51;
+            if (r <= 120) return 0x65; if (r <= 140) return 0x79;
+            if (r <= 160) return 0x8D; if (r <= 180) return 0xA1;
+            if (r <= 200) return 0xB5; if (r <= 220) return 0xC9;
             if (r <= 248) return 0xDD;
             return r;
         }
 
         function scanLoop() {
             if (video.videoWidth === 0) { requestAnimationFrame(scanLoop); return; }
-            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+            
+            canvas.width = video.videoWidth; 
+            canvas.height = video.videoHeight;
             ctx.drawImage(video, 0, 0);
 
-            // ... [Grid Drawing Logic same as before] ...
-            const boxWidth = canvas.width * 0.8; const boxHeight = boxWidth * (3 / 4);
-            const offsetX = (canvas.width - boxWidth) / 2; const offsetY = (canvas.height - boxHeight) / 2;
+            const boxWidth = canvas.width * 0.8; 
+            const boxHeight = boxWidth * (3 / 4);
+            const offsetX = (canvas.width - boxWidth) / 2; 
+            const offsetY = (canvas.height - boxHeight) / 2;
             
-            // Check Frame & Bits
+            const cellW = boxWidth / COLS;
+            const cellH = cellW;
+            const gridOffsetY = offsetY + (boxHeight - (cellH * ROWS)) / 2;
+
             let bits = [], validFrame = true;
-            // ... [Insert previous Bit-reading logic here] ...
+
+            // 1. Check corners for Magenta (Frame Detection)
+            const corners = [{x:offsetX+15, y:offsetY+15}, {x:offsetX+boxWidth-15, y:offsetY+15}, 
+                             {x:offsetX+15, y:offsetY+boxHeight-15}, {x:offsetX+boxWidth-15, y:offsetY+boxHeight-15}];
             
-            // Auto-trigger logic
+            for (let p of corners) {
+                let d = ctx.getImageData(p.x, p.y, 1, 1).data;
+                if (!(d[0] > 130 && d[1] < 130 && d[2] > 130)) validFrame = false;
+            }
+
+            // 2. Read bits if frame is valid
+            if (validFrame) {
+                for (let y = 0; y < ROWS; y++) {
+                    for (let x = 0; x < COLS; x++) {
+                        let d = ctx.getImageData(offsetX + x*cellW + cellW/2, gridOffsetY + y*cellH + cellH/2, 1, 1).data;
+                        bits.push(((d[0]+d[1]+d[2])/3) < 100 ? 1 : 0);
+                    }
+                }
+            }
+
+            // 3. Process buffer and trigger action
             if (validFrame && canScan) {
                 buffer.push(bits);
                 if (buffer.length >= BUFFER_SIZE) {
@@ -85,21 +104,35 @@
                                      <td>${seed.toString(16).toUpperCase().padStart(4,'0')}</td>
                                      <td>${loc.toString(16).toUpperCase().padStart(2,'0')}</td>`;
                     
-                    // Open URL
-                    window.open(`https://dqix.github.io/Grotto-Searcher/?id=${catRank.toString(16).toUpperCase().padStart(2,'0')}${seed.toString(16).toUpperCase().padStart(4,'0')}`, '_blank');
+                    // Trigger Redirect
+                    const url = `https://dqix.github.io/Grotto-Searcher/?id=${catRank.toString(16).toUpperCase().padStart(2,'0')}${seed.toString(16).toUpperCase().padStart(4,'0')}`;
+                    window.open(url, '_blank');
                     
-                    // Cooldown
+                    // Set Cooldown
                     canScan = false;
-                    setTimeout(() => { canScan = true; buffer = []; }, 3000);
+                    buffer = []; 
+                    setTimeout(() => { canScan = true; }, 3000);
                 }
-            } else if (!canScan) {
-                ctx.strokeStyle = "yellow"; // Cooldown state
-                ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
+            } else if (!validFrame) {
+                buffer = []; // Reset if we lose focus
             }
+
+            ctx.strokeStyle = !canScan ? "yellow" : (validFrame ? "cyan" : "lime");
+            ctx.lineWidth = 4;
+            ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
+            
             requestAnimationFrame(scanLoop);
         }
 
-        function majorityVote(frames) { /* ... [Same as before] ... */ }
+        function majorityVote(frames) {
+            let result = [];
+            for (let i = 0; i < frames[0].length; i++) {
+                let ones = frames.reduce((acc, frame) => acc + frame[i], 0);
+                result.push(ones > frames.length / 2 ? 1 : 0);
+            }
+            return result;
+        }
+
         video.onloadedmetadata = () => scanLoop();
     </script>
 </body>
