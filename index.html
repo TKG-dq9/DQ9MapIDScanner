@@ -47,23 +47,49 @@
         
         ctx.drawImage(video, 0, 0);
         
-        // Define targeting box (adjust 0.8 if you want it larger/smaller on screen)
         const boxWidth = canvas.width * 0.8; 
         const boxHeight = boxWidth * (ROWS / COLS); 
-        
         const offsetX = (canvas.width - boxWidth) / 2;
         const offsetY = (canvas.height - boxHeight) / 2;
+        const cellW = boxWidth / COLS;
+        const cellH = boxHeight / ROWS;
 
-        // Draw outer targeting box
-        ctx.strokeStyle = "lime";
+        let bits = [];
+        let validFrame = true;
+
+        // 1. Read the pixels and calculate data BEFORE drawing any overlays
+        for (let y = 0; y < ROWS; y++) {
+            for (let x = 0; x < COLS; x++) {
+                const px = Math.floor(offsetX + x * cellW + cellW / 2);
+                const py = Math.floor(offsetY + y * cellH + cellH / 2);
+                
+                // READ THE PIXEL FIRST
+                const data = ctx.getImageData(px, py, 1, 1).data;
+                const r = data[0], g = data[1], b = data[2];
+
+                // Detect Magenta background (High R, Low G, High B)
+                // (Lowered the threshold to 130 to be safer against washed-out phone cameras)
+                if (r > 130 && g < 130 && b > 130) {
+                    validFrame = false;
+                }
+
+                // Black is 1, White is 0
+                const brightness = (r + g + b) / 3;
+                bits.push(brightness < 100 ? 1 : 0); 
+                
+                // NOW draw the targeting dot (Swapped to Yellow for better contrast)
+                ctx.fillStyle = "yellow";
+                ctx.fillRect(px - 2, py - 2, 4, 4);
+            }
+        }
+
+        // 2. Draw the targeting box and grid colors based on if we have a clean lock-on
+        ctx.strokeStyle = validFrame ? "cyan" : "lime";
         ctx.lineWidth = 4;
         ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
 
-        const cellW = boxWidth / COLS;
-        const cellH = boxHeight / ROWS;
-        
-        // Draw inner grid
-        ctx.strokeStyle = "rgba(0, 255, 0, 0.4)";
+        // Draw inner grid lines
+        ctx.strokeStyle = validFrame ? "rgba(0, 255, 255, 0.6)" : "rgba(0, 255, 0, 0.4)";
         ctx.lineWidth = 2;
         ctx.beginPath();
         for (let x = 1; x < COLS; x++) {
@@ -76,47 +102,15 @@
         }
         ctx.stroke();
 
-        let bits = [];
-        let validFrame = true; // Assume good alignment until we hit magenta
-
-        for (let y = 0; y < ROWS; y++) {
-            for (let x = 0; x < COLS; x++) {
-                const px = Math.floor(offsetX + x * cellW + cellW / 2);
-                const py = Math.floor(offsetY + y * cellH + cellH / 2);
-                
-                // Draw Cyan dots (highly visible against Magenta/Black/White)
-                ctx.fillStyle = "cyan";
-                ctx.fillRect(px - 2, py - 2, 4, 4);
-
-                const data = ctx.getImageData(px, py, 1, 1).data;
-                const r = data[0], g = data[1], b = data[2];
-
-                // Detect Magenta background (High R, Low G, High B)
-                // If we see magenta, the camera is misaligned.
-                if (r > 150 && g < 120 && b > 150) {
-                    validFrame = false;
-                }
-
-                // Black is 1, White is 0
-                // We use a simple threshold: if it's generally dark, it's black.
-                const brightness = (r + g + b) / 3;
-                bits.push(brightness < 100 ? 1 : 0); 
-            }
-        }
-        
-        // ONLY save the frame data if we didn't accidentally sample the magenta background
+        // 3. Save to buffer only if valid
         if (validFrame) {
             buffer.push(bits);
             if (buffer.length > BUFFER_SIZE) { buffer.shift(); }
-            
-            // Optional: Change box color to show it's successfully locked on
-            ctx.strokeStyle = "cyan";
-            ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
         } else {
-            // Clear buffer if we lose alignment
-            buffer = [];
+            buffer = []; // Wipe corrupted data immediately
         }
 
+        // 4. Update URL if we have enough stable frames
         if (buffer.length === BUFFER_SIZE) {
             const stable = majorityVote(buffer);
             const rank = parseInt(stable.slice(0,8).join(""), 2);
