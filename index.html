@@ -10,7 +10,7 @@
     <video id="cam" autoplay playsinline style="display:none;"></video>
     
     <div style="margin-bottom: 10px;">
-        <canvas id="c" style="width: 100%; max-width: 360px; aspect-ratio: 4/3; border: 2px solid #555; border-radius: 8px; background: #000;"></canvas>
+        <canvas id="c" style="width: 100%; max-width: 360px; aspect-ratio: 4/3; background: #000; border: 2px solid #555; border-radius: 8px;"></canvas>
     </div>
 
     <button id="toggleBtn" style="padding: 12px 24px; font-size: 16px; font-weight: bold; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 15px;">
@@ -21,7 +21,7 @@
         <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 13px;">
             <thead>
                 <tr style="border-bottom: 2px solid #666; color: #00bcd4;">
-                    <th>#</th><th>FQ</th><th>Rank</th><th>Seed</th><th>@</th><th>MelonGx</th><th>yab</th>
+                    <th>#</th><th>FQ</th><th>Rank</th><th>Seed</th><th>Loc</th><th>MelonGx</th><th>yab</th>
                 </tr>
             </thead>
             <tbody id="logBody"></tbody>
@@ -78,32 +78,38 @@
         function scanLoop() {
             if (!isScanning) return;
             
-            // Maintain internal canvas resolution
-            canvas.width = 640; canvas.height = 480; 
-            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            // Set canvas to match the actual camera feed resolution
+            if (canvas.width !== video.videoWidth) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+            }
+            
+            ctx.drawImage(video, 0, 0);
 
+            // Use the canvas dimensions for all math to ensure perfect alignment
             const boxWidth = canvas.width * 0.7; 
             const boxHeight = boxWidth * (3 / 4);
             const offsetX = (canvas.width - boxWidth) / 2; 
             const offsetY = (canvas.height - boxHeight) / 2;
             
             const cellW = boxWidth / COLS;
-            const cellH = cellW;
+            const cellH = cellW; // Keep cells square
             const gridOffsetY = offsetY + (boxHeight - (cellH * ROWS)) / 2;
 
             let bits = [], validFrame = true;
 
+            // Frame detection using the same aspect-correct logic
             const corners = [{x:offsetX+15, y:offsetY+15}, {x:offsetX+boxWidth-15, y:offsetY+15}, 
                              {x:offsetX+15, y:offsetY+boxHeight-15}, {x:offsetX+boxWidth-15, y:offsetY+boxHeight-15}];
             for (let p of corners) {
-                let d = ctx.getImageData(p.x, p.y, 1, 1).data;
+                let d = ctx.getImageData(Math.floor(p.x), Math.floor(p.y), 1, 1).data;
                 if (!(d[0] > 130 && d[1] < 130 && d[2] > 130)) validFrame = false;
             }
 
             if (validFrame) {
                 for (let y = 0; y < ROWS; y++) {
                     for (let x = 0; x < COLS; x++) {
-                        let d = ctx.getImageData(offsetX + x*cellW + cellW/2, gridOffsetY + y*cellH + cellH/2, 1, 1).data;
+                        let d = ctx.getImageData(Math.floor(offsetX + x*cellW + cellW/2), Math.floor(gridOffsetY + y*cellH + cellH/2), 1, 1).data;
                         bits.push(((d[0]+d[1]+d[2])/3) < 100 ? 1 : 0);
                     }
                 }
@@ -114,7 +120,7 @@
             }
 
             ctx.strokeStyle = validFrame ? "cyan" : "lime";
-            ctx.lineWidth = 4;
+            ctx.lineWidth = 6;
             ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
 
             if (buffer.length === BUFFER_SIZE) {
@@ -129,7 +135,7 @@
                 const seedHex = seed.toString(16).toUpperCase().padStart(4, '0');
                 const locHex = loc.toString(16).toUpperCase().padStart(2, '0');
                 
-                const grottoUrl = `https://dqix.github.io/Grotto-Searcher/?id=${catHex}${seedHex}`;
+                const grottoUrl = `https://dqix.github.io/Grotto-Searcher/?id=${catHex}${seedHex}${locHex}`;
                 const yabdUrl = `https://www.yabd.org/apps/dq9/grottodetails.php?map=${catHex}${seedHex}`;
                 
                 const row = logBody.insertRow(0);
