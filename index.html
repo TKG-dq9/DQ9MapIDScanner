@@ -47,18 +47,21 @@
         
         ctx.drawImage(video, 0, 0);
         
-        // 1. Create a 4:3 Targeting Box to match the DS Screen edges
+        // 1. Create the outer 4:3 Targeting Box to match the DS Screen edges
         const boxWidth = canvas.width * 0.8; 
-        const boxHeight = boxWidth * (3 / 4); // 4:3 aspect ratio
+        const boxHeight = boxWidth * (3 / 4); // Outer box is 4:3
         const offsetX = (canvas.width - boxWidth) / 2;
         const offsetY = (canvas.height - boxHeight) / 2;
 
         // 2. Center a perfect 2:1 grid of SQUARES inside the 4:3 space
-        const cellW = boxWidth / COLS;
-        const cellH = cellW; // Forces cells to be perfect 1:1 squares
-        const gridHeight = cellH * ROWS; // Total height of the 8x4 grid
+        // Based on sampleMasayuki.png, the grid is roughly 85% of the screen's width
+        const gridWidth = boxWidth * 0.85; 
+        const cellW = gridWidth / COLS;
+        const cellH = cellW; // Forces 1:1 perfect square cells
+        const gridHeight = cellH * ROWS; // Total height of the 2:1 grid
         
-        // Calculate vertical offset to center the grid inside the 4:3 box
+        // Calculate both X and Y offsets to perfectly center the grid inside the 4:3 box
+        const gridOffsetX = offsetX + (boxWidth - gridWidth) / 2;
         const gridOffsetY = offsetY + (boxHeight - gridHeight) / 2;
 
         let bits = [];
@@ -68,12 +71,12 @@
             return r > 130 && g < 130 && b > 130;
         }
 
-        // 3. Look for Magenta in the 4 corners of the 4:3 DS screen box
+        // 3. Look for Magenta in the 4 extreme corners of the 4:3 DS screen box
         const corners = [
-            { x: offsetX + 10, y: offsetY + 10 }, // Top-Left
-            { x: offsetX + boxWidth - 10, y: offsetY + 10 }, // Top-Right
-            { x: offsetX + 10, y: offsetY + boxHeight - 10 }, // Bottom-Left
-            { x: offsetX + boxWidth - 10, y: offsetY + boxHeight - 10 } // Bottom-Right
+            { x: offsetX + 15, y: offsetY + 15 }, // Top-Left
+            { x: offsetX + boxWidth - 15, y: offsetY + 15 }, // Top-Right
+            { x: offsetX + 15, y: offsetY + boxHeight - 15 }, // Bottom-Left
+            { x: offsetX + boxWidth - 15, y: offsetY + boxHeight - 15 } // Bottom-Right
         ];
 
         for (let corner of corners) {
@@ -85,10 +88,10 @@
             ctx.fillRect(corner.x - 4, corner.y - 4, 8, 8);
         }
 
-        // 4. Read the 8x4 grid pixels using the corrected gridOffsetY
+        // 4. Read the 8x4 grid pixels using the centered grid offsets
         for (let y = 0; y < ROWS; y++) {
             for (let x = 0; x < COLS; x++) {
-                const px = Math.floor(offsetX + x * cellW + cellW / 2);
+                const px = Math.floor(gridOffsetX + x * cellW + cellW / 2);
                 const py = Math.floor(gridOffsetY + y * cellH + cellH / 2);
                 
                 const data = ctx.getImageData(px, py, 1, 1).data;
@@ -102,23 +105,23 @@
             }
         }
 
-        // 5. Draw the UI
+        // 5. Draw the UI elements
         // Outer 4:3 DS Screen border
         ctx.strokeStyle = validFrame ? "cyan" : "lime";
         ctx.lineWidth = 4;
         ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
 
-        // Inner 8x4 Grid lines (drawn inside the square area)
+        // Inner 8x4 Grid lines (drawn explicitly around the square data area)
         ctx.strokeStyle = validFrame ? "rgba(0, 255, 255, 0.6)" : "rgba(0, 255, 0, 0.4)";
         ctx.lineWidth = 2;
         ctx.beginPath();
         for (let x = 1; x < COLS; x++) {
-            ctx.moveTo(offsetX + x * cellW, gridOffsetY);
-            ctx.lineTo(offsetX + x * cellW, gridOffsetY + gridHeight);
+            ctx.moveTo(gridOffsetX + x * cellW, gridOffsetY);
+            ctx.lineTo(gridOffsetX + x * cellW, gridOffsetY + gridHeight);
         }
         for (let y = 1; y < ROWS; y++) {
-            ctx.moveTo(offsetX, gridOffsetY + y * cellH);
-            ctx.lineTo(offsetX + boxWidth, gridOffsetY + y * cellH);
+            ctx.moveTo(gridOffsetX, gridOffsetY + y * cellH);
+            ctx.lineTo(gridOffsetX + gridWidth, gridOffsetY + y * cellH);
         }
         ctx.stroke();
 
@@ -130,7 +133,7 @@
             buffer = []; 
         }
 
-        // 7. Update URL if stable (Now fully appending the 8-character ID string)
+        // 7. Update URL if stable
         if (buffer.length === BUFFER_SIZE) {
             const stable = majorityVote(buffer);
             const rank = parseInt(stable.slice(0,8).join(""), 2);
