@@ -47,8 +47,9 @@
         
         ctx.drawImage(video, 0, 0);
         
+        // 1. Create a 4:3 Targeting Box to match the DS Screen
         const boxWidth = canvas.width * 0.8; 
-        const boxHeight = boxWidth * (ROWS / COLS); 
+        const boxHeight = boxWidth * (3 / 4); // Changed to 4:3 ratio
         const offsetX = (canvas.width - boxWidth) / 2;
         const offsetY = (canvas.height - boxHeight) / 2;
         const cellW = boxWidth / COLS;
@@ -57,38 +58,54 @@
         let bits = [];
         let validFrame = true;
 
-        // 1. Read the pixels and calculate data BEFORE drawing any overlays
+        // Helper function to check if a pixel is Magenta
+        function isMagenta(r, g, b) {
+            return r > 130 && g < 130 && b > 130;
+        }
+
+        // 2. Look for Magenta in the 4 corners of the DS screen FIRST
+        const corners = [
+            { x: offsetX + 10, y: offsetY + 10 }, // Top-Left
+            { x: offsetX + boxWidth - 10, y: offsetY + 10 }, // Top-Right
+            { x: offsetX + 10, y: offsetY + boxHeight - 10 }, // Bottom-Left
+            { x: offsetX + boxWidth - 10, y: offsetY + boxHeight - 10 } // Bottom-Right
+        ];
+
+        for (let corner of corners) {
+            const data = ctx.getImageData(corner.x, corner.y, 1, 1).data;
+            if (!isMagenta(data[0], data[1], data[2])) {
+                validFrame = false; // If any corner isn't magenta, drop the frame
+            }
+            
+            // Draw bright pink dots to show where it's looking for the DS screen corners
+            ctx.fillStyle = "magenta";
+            ctx.fillRect(corner.x - 4, corner.y - 4, 8, 8);
+        }
+
+        // 3. Read the 8x4 grid pixels
         for (let y = 0; y < ROWS; y++) {
             for (let x = 0; x < COLS; x++) {
                 const px = Math.floor(offsetX + x * cellW + cellW / 2);
                 const py = Math.floor(offsetY + y * cellH + cellH / 2);
                 
-                // READ THE PIXEL FIRST
                 const data = ctx.getImageData(px, py, 1, 1).data;
                 const r = data[0], g = data[1], b = data[2];
-
-                // Detect Magenta background (High R, Low G, High B)
-                // (Lowered the threshold to 130 to be safer against washed-out phone cameras)
-                if (r > 130 && g < 130 && b > 130) {
-                    validFrame = false;
-                }
 
                 // Black is 1, White is 0
                 const brightness = (r + g + b) / 3;
                 bits.push(brightness < 100 ? 1 : 0); 
                 
-                // NOW draw the targeting dot (Swapped to Yellow for better contrast)
+                // Draw targeting dots for the grid
                 ctx.fillStyle = "yellow";
                 ctx.fillRect(px - 2, py - 2, 4, 4);
             }
         }
 
-        // 2. Draw the targeting box and grid colors based on if we have a clean lock-on
+        // 4. Draw the UI
         ctx.strokeStyle = validFrame ? "cyan" : "lime";
         ctx.lineWidth = 4;
         ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
 
-        // Draw inner grid lines
         ctx.strokeStyle = validFrame ? "rgba(0, 255, 255, 0.6)" : "rgba(0, 255, 0, 0.4)";
         ctx.lineWidth = 2;
         ctx.beginPath();
@@ -102,15 +119,15 @@
         }
         ctx.stroke();
 
-        // 3. Save to buffer only if valid
+        // 5. Save to buffer only if valid
         if (validFrame) {
             buffer.push(bits);
             if (buffer.length > BUFFER_SIZE) { buffer.shift(); }
         } else {
-            buffer = []; // Wipe corrupted data immediately
+            buffer = []; 
         }
 
-        // 4. Update URL if we have enough stable frames
+        // 6. Update URL if stable
         if (buffer.length === BUFFER_SIZE) {
             const stable = majorityVote(buffer);
             const rank = parseInt(stable.slice(0,8).join(""), 2);
