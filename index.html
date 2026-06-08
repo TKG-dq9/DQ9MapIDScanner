@@ -134,7 +134,13 @@
             const seed = parseInt(stable.slice(8,24).join(""), 2);
             const loc  = parseInt(stable.slice(24,32).join(""), 2);
             
-            currentDecodedUrl = `https://dqix.github.io/Grotto-Searcher/?id=${rank}${seed}`;
+            // Convert numbers to Hex, convert to uppercase, and pad with leading zeros
+            const rankHex = rank.toString(16).toUpperCase().padStart(2, '0');
+            const seedHex = seed.toString(16).toUpperCase().padStart(4, '0');
+            const locHex  = loc.toString(16).toUpperCase().padStart(2, '0');
+            
+            // Combines them into a clean 8-character ID string (e.g., BB0E5C54)
+            currentDecodedUrl = `https://dqix.github.io/Grotto-Searcher/?id=${rankHex}${seedHex}${locHex}`;
         }
         
         requestAnimationFrame(scanLoop);
