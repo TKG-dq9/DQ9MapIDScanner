@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DQ9 Auto-Stop Scanner</title>
+    <title>DQ9 Map Scanner</title>
 </head>
 <body style="font-family: sans-serif; background: #222; color: #fff; margin: 0; padding: 20px; text-align: center;">
 
-    <video id="cam" autoplay playsinline style="display:none;"></video>
+    <video id="cam" autoplay playsinline style="width: 100%; max-width: 500px; border: 2px solid #555; border-radius: 8px; margin-bottom: 10px;"></video>
     
+    <br>
     <button id="toggleBtn" style="padding: 15px 30px; font-size: 18px; font-weight: bold; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer;">
         Start Scanner
     </button>
@@ -17,11 +18,11 @@
         <canvas id="c" style="width: 100%; max-width: 500px; border: 2px solid #555; border-radius: 8px;"></canvas>
     </div>
 
-    <div style="margin-top: 20px; max-width: 500px; margin-left: auto; margin-right: auto; background: #333; padding: 10px; border-radius: 8px;">
-        <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 18px;">
+    <div style="margin-top: 20px; max-width: 600px; margin-left: auto; margin-right: auto; background: #333; padding: 10px; border-radius: 8px;">
+        <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 16px;">
             <thead>
                 <tr style="border-bottom: 2px solid #666; color: #00bcd4;">
-                    <th>FQ</th><th>Rank</th><th>Seed</th><th>@</th>
+                    <th>FQ</th><th>Rank</th><th>Seed</th><th>Loc</th><th>Link</th>
                 </tr>
             </thead>
             <tbody id="logBody"></tbody>
@@ -41,11 +42,7 @@
         let isScanning = false;
 
         toggleBtn.addEventListener("click", () => {
-            if (isScanning) {
-                stopScanner();
-            } else {
-                startScanner();
-            }
+            isScanning ? stopScanner() : startScanner();
         });
 
         function startScanner() {
@@ -54,7 +51,6 @@
                 .then(s => {
                     stream = s;
                     video.srcObject = s;
-                    video.play();
                     toggleBtn.innerText = "Stop Scanner";
                     toggleBtn.style.background = "#f44336";
                     isScanning = true;
@@ -64,9 +60,7 @@
         }
 
         function stopScanner() {
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
+            if (stream) stream.getTracks().forEach(t => t.stop());
             video.srcObject = null;
             toggleBtn.innerText = "Start Scanner";
             toggleBtn.style.background = "#4CAF50";
@@ -84,17 +78,8 @@
             return r;
         }
 
-        function majorityVote(frames) {
-            let result = [];
-            for (let i = 0; i < frames[0].length; i++) {
-                let ones = frames.reduce((acc, frame) => acc + frame[i], 0);
-                result.push(ones > frames.length / 2 ? 1 : 0);
-            }
-            return result;
-        }
-
         function scanLoop() {
-            if (!isScanning || video.videoWidth === 0) return;
+            if (!isScanning || video.paused) return;
             
             canvas.width = video.videoWidth; 
             canvas.height = video.videoHeight;
@@ -132,28 +117,26 @@
                 buffer = [];
             }
 
-            // Detection Logic
             if (buffer.length === BUFFER_SIZE) {
-                const stable = majorityVote(buffer);
+                const stable = buffer.reduce((acc, f) => f.map((b, i) => b + (acc[i] || 0)), []).map(b => b > BUFFER_SIZE/2 ? 1 : 0);
                 const rawRank = parseInt(stable.slice(0,8).join(""), 2);
                 const seed = parseInt(stable.slice(8,24).join(""), 2);
                 const loc = parseInt(stable.slice(24,32).join(""), 2);
                 const catRank = categorizeRank(rawRank);
                 
-                const rawRankHex = rawRank.toString(16).toUpperCase().padStart(2, '0');
-                const catRankHex = catRank.toString(16).toUpperCase().padStart(2, '0');
+                const fqHex = rawRank.toString(16).toUpperCase().padStart(2, '0');
+                const catHex = catRank.toString(16).toUpperCase().padStart(2, '0');
                 const seedHex = seed.toString(16).toUpperCase().padStart(4, '0');
                 const locHex = loc.toString(16).toUpperCase().padStart(2, '0');
                 
-                const url = `https://dqix.github.io/Grotto-Searcher/?id=${catRankHex}${seedHex}${locHex}`;
+                const url = `https://dqix.github.io/Grotto-Searcher/?id=${catHex}${seedHex}`;
                 
                 const row = logBody.insertRow(0);
-                row.innerHTML = `<td>${rawRankHex}</td><td>${catRankHex}</td>
-                                 <td><a href="${url}" target="_blank" style="color:#00bcd4; text-decoration:none;">${seedHex}</a></td>
-                                 <td>${locHex}</td>`;
+                row.innerHTML = `<td>${fqHex}</td><td>${catHex}</td><td>${seedHex}</td><td>${locHex}</td>
+                                 <td><a href="${url}" target="_blank" style="color:#ffcc00">GO</a></td>`;
                 
                 stopScanner();
-                return; // Stop loop
+                return; 
             }
 
             ctx.strokeStyle = validFrame ? "cyan" : "lime";
