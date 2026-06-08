@@ -1,4 +1,4 @@
-<video id="cam" autoplay></video>
+<video id="cam" autoplay playsinline></video>
 <canvas id="c"></canvas>
 
 <script>
@@ -6,15 +6,41 @@ const video = document.getElementById("cam");
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
 
-// 1. start camera
-navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-.then(stream => video.srcObject = stream);
-
-// 2. define your grid
 const COLS = 8;
 const ROWS = 4;
 
-function readFrame() {
+// store multiple frames for stability
+let buffer = [];
+const BUFFER_SIZE = 5;
+
+// 1. start camera
+navigator.mediaDevices.getUserMedia({
+  video: { facingMode: "environment" }
+}).then(stream => {
+  video.srcObject = stream;
+  video.play();
+});
+
+// 2. wait until video is actually ready
+function waitForVideo() {
+  if (video.videoWidth === 0) {
+    requestAnimationFrame(waitForVideo);
+    return;
+  }
+  scanLoop();
+}
+
+video.onloadedmetadata = () => {
+  waitForVideo();
+};
+
+// 3. main loop (IMPORTANT: no setInterval)
+function scanLoop() {
+  if (video.videoWidth === 0) {
+    requestAnimationFrame(scanLoop);
+    return;
+  }
+
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
 
@@ -28,30 +54,55 @@ function readFrame() {
   for (let y = 0; y < ROWS; y++) {
     for (let x = 0; x < COLS; x++) {
 
-      const px = Math.floor(x * cellW + cellW/2);
-      const py = Math.floor(y * cellH + cellH/2);
+      const px = Math.floor(x * cellW + cellW / 2);
+      const py = Math.floor(y * cellH + cellH / 2);
 
       const data = ctx.getImageData(px, py, 1, 1).data;
-
       const brightness = (data[0] + data[1] + data[2]) / 3;
+
       bits.push(brightness < 128 ? 1 : 0);
     }
   }
 
-  // decode (example 32-bit layout)
-  const rank = parseInt(bits.slice(0,8).join(""), 2);
-  const seed = parseInt(bits.slice(8,24).join(""), 2);
-  const loc  = parseInt(bits.slice(24,32).join(""), 2);
+  buffer.push(bits);
 
-  const url = `https://dqix.github.io/Grotto-Searcher/?id=${rank}${seed}`;
+  if (buffer.length > BUFFER_SIZE) {
+    buffer.shift();
+  }
 
-  console.log(rank, seed, loc);
-  console.log(url);
+  if (buffer.length === BUFFER_SIZE) {
+    const stable = majorityVote(buffer);
 
-  // auto redirect (or show button instead)
-  window.location.href = url;
+    const rank = parseInt(stable.slice(0,8).join(""), 2);
+    const seed = parseInt(stable.slice(8,24).join(""), 2);
+    const loc  = parseInt(stable.slice(24,32).join(""), 2);
+
+    const url = `https://dqix.github.io/Grotto-Searcher/?id=${rank}${seed}`;
+
+    console.log("DECODED:", rank, seed, loc);
+    console.log(url);
+
+    // ONLY redirect if you want (comment for testing)
+    window.location.href = url;
+  }
+
+  requestAnimationFrame(scanLoop);
 }
 
-// run every 2 seconds
-setInterval(readFrame, 2000);
+// majority vote across frames
+function majorityVote(frames) {
+  const result = [];
+
+  for (let i = 0; i < frames[0].length; i++) {
+    let sum = 0;
+
+    for (let f = 0; f < frames.length; f++) {
+      sum += frames[f][i];
+    }
+
+    result.push(sum > frames.length / 2 ? 1 : 0);
+  }
+
+  return result;
+}
 </script>
