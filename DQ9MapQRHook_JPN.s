@@ -71,10 +71,10 @@ irq_handler:
     str r4, [r3]
 
     cmp r4, #1
-    beq do_save             @ If we just turned ON, save game's display state
+    beq do_save             @ If just turned ON, save game's display state
 
 do_restore:
-    @ --- WE JUST TURNED OFF: RESTORE GAME STATE ---
+    @ --- JUST TURNED OFF: RESTORE GAME STATE ---
     ldr r3, =0x020F93F8     @ RAM: Saved DISPCNT
     ldrh r1, [r3]
     ldr r0, =REG_DISPCNT
@@ -88,7 +88,7 @@ do_restore:
     b active_loop
 
 do_save:
-    @ --- WE JUST TURNED ON: CAPTURE GAME STATE ---
+    @ --- JUST TURNED ON: CAPTURE GAME STATE ---
     ldr r0, =REG_DISPCNT
     ldrh r1, [r0]
     ldr r3, =0x020F93F8
@@ -107,7 +107,7 @@ active_loop:
     ldr r4, [r3]
     and r4, r4, #1
     cmp r4, #1
-    bne exit_irq            @ If Toggle is OFF, gracefully exit!
+    bne exit_irq            @ If Toggle is OFF, exit
 
     @ ====================================================
     @ Setup Display Hardware (Forced Mode)
