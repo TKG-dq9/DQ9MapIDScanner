@@ -7,7 +7,6 @@ Saving adventure log.<br>
 Do not turn the power OFF<br>
 or remove the DS Game Card. 📝<br>
             🔽<br>
-<br>
 ## JPN
 ```
 E20F9160 0000028C
