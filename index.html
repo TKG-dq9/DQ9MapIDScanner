@@ -13,6 +13,15 @@
         <canvas id="c" style="width: 100%; max-width: 360px; aspect-ratio: 4/3; background: #000; border: 2px solid #555; border-radius: 8px;"></canvas>
     </div>
 
+    <div style="margin-bottom:10px;">
+        <input
+            id="serverIp"
+            type="text"
+            placeholder="PC IP (e.g. 192.168.1.123)"
+            style="padding:8px; width:220px; font-size:16px;"
+        >
+    </div>
+
     <button id="toggleBtn" style="padding: 12px 24px; font-size: 16px; font-weight: bold; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 15px;">
         Start Scanner
     </button>
@@ -151,12 +160,33 @@
                 
                 const grottoUrl = `https://dqix.github.io/Grotto-Searcher/?id=${catHex}${seedHex}`;
                 const yabdUrl = `https://www.yabd.org/apps/dq9/grottodetails.php?map=${catHex}${seedHex}`;
+
+                const serverIp = document.getElementById("serverIp").value.trim();
+
+                if (serverIp) {
+                    fetch(`http://${serverIp}:3000/scan`, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            fq: fqHex,
+                            rank: catHex,
+                            seed: seedHex,
+                            location: locHex,
+                            mapId: `${catHex}${seedHex}`,
+                            urls: [grottoUrl, yabdUrl]
+                        })
+                    })
+                    .then(() => console.log("Sent to PC"))
+                    .catch(err => console.error("Failed to send:", err));
+                }
                 
                 const row = logBody.insertRow(0);
                 scanCount++;
                 row.innerHTML = `<td>${scanCount}</td><td>${fqHex}</td><td>${catHex}</td><td>${seedHex}</td><td>${locHex}</td>
                                  <td><a href="${grottoUrl}" target="_blank" style="color:#00bcd4">Link</a></td>
-                                 <td><a href="${yabdUrl}" target="_blank" style="color:#00bcd4">Link</a></td>`;
+                                 <td><a href="${yabdUrl}" target="_blank" style="color:#ffcc00">Link</a></td>`;
                 
                 stopScanner();
                 return; 
