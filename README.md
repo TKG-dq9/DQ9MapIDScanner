@@ -1,4 +1,4 @@
-## DQ9MapIDScanner
+## DQ9 Map ID QR Code Scanner
 Wayward sheep of the Great Shepherd,<br>
 welcome to this house of the Almighty.<br>
 How may we help you?<br>
