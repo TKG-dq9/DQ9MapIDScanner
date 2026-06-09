@@ -17,10 +17,19 @@
         <input
             id="serverIp"
             type="text"
-            placeholder="PC IP (e.g. 192.168.1.123)"
+            placeholder="PC IP (e.g. 192.168.1.67)"
             style="padding:8px; width:220px; font-size:16px;"
         >
     </div>
+
+    <div id="status" style="margin:8px; color:#aaa;">
+        Not connected
+    </div>
+
+    <button id="testBtn"
+        style="padding:8px 16px; margin-bottom:10px;">
+        Test Connection
+    </button>
 
     <button id="toggleBtn" style="padding: 12px 24px; font-size: 16px; font-weight: bold; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 15px;">
         Start Scanner
@@ -43,9 +52,37 @@
         const ctx = canvas.getContext("2d");
         const logBody = document.getElementById("logBody");
         const toggleBtn = document.getElementById("toggleBtn");
+        const status = document.getElementById("status");
+        const serverIpInput = document.getElementById("serverIp");
 
         const COLS = 8, ROWS = 4, BUFFER_SIZE = 5;
         let buffer = [], stream = null, isScanning = false, scanCount = 0;
+
+        document.getElementById("testBtn").addEventListener("click", async () => {
+            const ip = serverIpInput.value.trim();
+
+            if (!ip) {
+                alert("Enter PC IP first");
+                return;
+            }
+
+            status.innerText = "Testing...";
+            status.style.color = "yellow";
+
+            try {
+                const res = await fetch(`http://${ip}:3000`, {
+                    method: "GET"
+                });
+
+                const text = await res.text();
+
+                status.innerText = "Connected: " + text;
+                status.style.color = "lime";
+            } catch (e) {
+                status.innerText = "Connection failed";
+                status.style.color = "red";
+            }
+        });
 
         toggleBtn.addEventListener("click", () => {
             isScanning ? stopScanner() : startScanner();
