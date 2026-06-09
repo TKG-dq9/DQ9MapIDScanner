@@ -61,22 +61,57 @@ let buffer = [], stream = null, isScanning = false, scanCount = 0;
 document.getElementById("testBtn").addEventListener("click", async () => {
     const ip = serverIpInput.value.trim();
 
-    if (!ip) return alert("Enter PC IP first");
-
-    status.innerText = "Testing...";
+    status.innerText = "Testing connection...";
     status.style.color = "yellow";
 
+    if (!ip) {
+        status.innerText = "No IP entered";
+        status.style.color = "red";
+        return;
+    }
+
+    const url = `http://${ip}:3000/`;
+
+    // quick sanity display
+    status.innerText = `Testing: ${url}`;
+
     try {
-        const res = await fetch(`http://${ip}:3000/`, {
-            method: "GET"
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+
+        const res = await fetch(url, {
+            method: "GET",
+            signal: controller.signal
         });
+
+        clearTimeout(timeout);
 
         const text = await res.text();
 
-        status.innerText = "Connected: " + text;
+        status.innerText = `Connected: ${text}`;
         status.style.color = "lime";
-    } catch (e) {
-        status.innerText = "Connection failed";
+
+    } catch (err) {
+
+        // 🔥 REAL ERROR BREAKDOWN
+        let reason = "Unknown error";
+
+        if (err.name === "AbortError") {
+            reason = "Timeout (phone cannot reach PC)";
+        }
+        else if (err.message.includes("Failed to fetch")) {
+            reason =
+                "Failed to fetch → likely:\n" +
+                "• wrong IP\n" +
+                "• PC firewall blocking port 3000\n" +
+                "• server not reachable on LAN\n" +
+                "• HTTP blocked by browser context";
+        }
+        else {
+            reason = err.message;
+        }
+
+        status.innerText = "Connection failed:\n" + reason;
         status.style.color = "red";
     }
 });
