@@ -8,7 +8,7 @@
 </head>
 <body style="font-family: monospace; background: #000; color: #fff; margin: 0; padding: 10px; text-align: center;">
 
-    <div style="margin-bottom: 15px; background: #424242; display: inline-block; padding: 10px; border-radius: 8px; border: 2px solid #9CC6F7;">
+    <div style="margin-bottom: 15px; background: #424242; display: inline-block; padding: 10px; border-radius: 8px; border: 1px dashed #9CC6F7;">
         <label for="pairingCode" style="font-size: 14px; font-weight: bold; color: #9CC6F7; display: block; margin-bottom: 5px;">Room ID:</label>
         <input type="text" id="pairingCode" placeholder="0032" maxlength="4" style="padding: 8px; font-size: 16px; font-weight: bold; border-radius: 5px; border: 1px solid #555; background: #222; color: #fff; text-align: center; width: 120px; font-family: monospace; text-transform: uppercase;">
         <span id="cloudStatus" style="font-size: 12px; display: block; margin-top: 5px; color: #FFBD63;">Connecting...</span>
@@ -27,10 +27,16 @@
     </button>
 
     <div style="max-width: 600px; margin-left: auto; margin-right: auto; background: #333; padding: 8px; border-radius: 8px;">
-        <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 13px;">
+        <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 13px; color: #FFF;">
             <thead>
-                <tr style="border-bottom: 2px solid #666; color: #FFF;">
-                    <th>#</th><th>FQ</th><th>Rank</th><th>Seed</th><th>@</th><th>Grotto Searcher</th><th>yab's DQ9 Tools</th>
+                <tr style="border-bottom: 2px solid #666;">
+                    <th style="vertical-align: middle;">#</th>
+                    <th style="vertical-align: middle;">FQ</th>
+                    <th style="vertical-align: middle;">Rank</th>
+                    <th style="vertical-align: middle;">Seed</th>
+                    <th style="vertical-align: middle;">@</th>
+                    <th style="vertical-align: middle;">Grotto<br>Searcher</th>
+                    <th style="vertical-align: middle;">yab's DQ9<br>Tools</th>
                 </tr>
             </thead>
             <tbody id="logBody"></tbody>
