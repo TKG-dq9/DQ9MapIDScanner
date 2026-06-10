@@ -1,24 +1,104 @@
 <!DOCTYPE html>
-<html>
-<body>
-<h1>Receiver</h1>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DQ9 Map Receiver Dashboard</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+</head>
+<body style="font-family: sans-serif; background: #1a1a1a; color: #fff; margin: 0; padding: 20px; text-align: center;">
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/12.0.0/firebase-app.js";
+    <h1 style="color: #00bcd4; margin-bottom: 5px;">⚔️ DQ9 Live Grotto Receiver </h1>
+    <p style="color: #aaa; margin-top: 0;">Keep this page open on your computer while scanning with your phone.</p>
 
-const firebaseConfig = {
-  apiKey: "AIzaSyClbXv-lyeR7UueCRJgeJP4obnuQQ4xDck",
-  authDomain: "dq9-map-scanner.firebaseapp.com",
-  projectId: "dq9-map-scanner",
-  storageBucket: "dq9-map-scanner.firebasestorage.app",
-  messagingSenderId: "316822847661",
-  appId: "1:316822847661:web:d9f86842cb9c984b4f4624"
-};
+    <div style="background: #2a2a2a; border: 2px dashed #00bcd4; display: inline-block; padding: 15px 40px; border-radius: 10px; margin: 20px auto;">
+        <span style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; display: block;">Your Phone Pairing Code</span>
+        <span id="codeDisplay" style="font-size: 48px; font-weight: bold; font-family: monospace; color: #fff; letter-spacing: 4px;">----</span>
+    </div>
 
-const app = initializeApp(firebaseConfig);
+    <div id="alertPanel" style="max-width: 500px; margin: 20px auto; background: #333; padding: 20px; border-radius: 10px; border-left: 5px solid #ff9800; display: none; text-align: left;">
+        <h3 style="margin-top:0; color: #ff9800;">🎯 New Map Detected!</h3>
+        <p style="font-family: monospace; font-size: 16px; margin: 5px 0;"><strong>Seed ID:</strong> <span id="mapIdDisplay" style="color:#00bcd4;"></span></p>
+        <p style="font-family: monospace; font-size: 14px; margin: 5px 0;">Rank: <span id="rankDisplay"></span> | Loc: <span id="locDisplay"></span></p>
+        <div style="margin-top: 15px; display: flex; gap: 10px;">
+            <a id="btnGrotto" href="#" target="_blank" style="flex:1; text-align:center; background:#00bcd4; color:#fff; padding: 10px; border-radius:5px; text-decoration:none; font-weight:bold;">Open Grotto Searcher</a>
+            <a id="btnYabd" href="#" target="_blank" style="flex:1; text-align:center; background:#4CAF50; color:#fff; padding: 10px; border-radius:5px; text-decoration:none; font-weight:bold;">Open Yabd App</a>
+        </div>
+    </div>
 
-console.log("Firebase connected");
-</script>
+    <div style="max-width: 700px; margin: 30px auto 0 auto; background: #222; padding: 15px; border-radius: 8px; border: 1px solid #444;">
+        <h3 style="margin-top: 0; text-align: left; color: #aaa;">Scan History</h3>
+        <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 14px;">
+            <thead>
+                <tr style="border-bottom: 2px solid #555; color: #aaa;">
+                    <th style="padding: 10px;">FQ</th><th>Rank</th><th>Seed</th><th>Location</th><th>Tools</th>
+                </tr>
+            </thead>
+            <tbody id="pcLogBody">
+                <tr><td colspan="5" style="padding: 20px; color: #666;">No maps scanned yet. Enter your code on your phone to link them!</td></tr>
+            </tbody>
+        </table>
+    </div>
 
+    <script>
+        const codeDisplay = document.getElementById("codeDisplay");
+        const pcLogBody = document.getElementById("pcLogBody");
+        const alertPanel = document.getElementById("alertPanel");
+        const mapIdDisplay = document.getElementById("mapIdDisplay");
+        const rankDisplay = document.getElementById("rankDisplay");
+        const locDisplay = document.getElementById("locDisplay");
+        const btnGrotto = document.getElementById("btnGrotto");
+        const btnYabd = document.getElementById("btnYabd");
+
+        let firstScan = true;
+
+        // 1. Generate a random 4-digit hex pairing code (0000 to FFFF)
+        const randomNum = Math.floor(Math.random() * 65536);
+        const pairingCode = randomNum.toString(16).toUpperCase().padStart(4, '0');
+        codeDisplay.innerText = pairingCode;
+
+        // 2. Connect to the public broker
+        const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
+
+        client.on('connect', () => {
+            // Subscribe to this specific room's channel
+            client.subscribe(`dq9/grotto/${pairingCode}`);
+        });
+
+        client.on('message', (topic, message) => {
+            const data = JSON.parse(message.toString());
+            
+            if (firstScan) {
+                pcLogBody.innerHTML = ""; // Clear placeholder text
+                firstScan = false;
+            }
+
+            // Update the prominent notification panel
+            mapIdDisplay.innerText = `${data.catHex}${data.seedHex}`;
+            rankDisplay.innerText = data.fqHex;
+            locDisplay.innerText = data.locHex;
+            btnGrotto.href = data.grottoUrl;
+            btnYabd.href = data.yabdUrl;
+            alertPanel.style.display = "block";
+
+            // Add item to the rolling table below
+            const row = pcLogBody.insertRow(0);
+            row.style.borderBottom = "1px solid #333";
+            row.innerHTML = `
+                <td style="padding: 10px; color:#ff9800;">${data.fqHex}</td>
+                <td>${data.catHex}</td>
+                <td style="color:#00bcd4;">${data.seedHex}</td>
+                <td>${data.locHex}</td>
+                <td>
+                    <a href="${data.grottoUrl}" target="_blank" style="color:#00bcd4; margin-right:10px;">Grotto</a>
+                    <a href="${data.yabdUrl}" target="_blank" style="color:#4CAF50;">Yabd</a>
+                </td>
+            `;
+
+            // Note: Automated window.open(data.grottoUrl) will be blocked by browsers 
+            // unless triggered directly by a physical mouse click. Showing the big action buttons 
+            // inside the alertPanel keeps the workflow perfectly fluid without annoying pop-up blocker popups!
+        });
+    </script>
 </body>
 </html>
