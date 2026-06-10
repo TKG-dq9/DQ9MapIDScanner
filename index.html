@@ -170,16 +170,14 @@
                                  <td><a href="${yabdUrl}" target="_blank" style="color:#00bcd4">Link</a></td>`;
                 
                 // --- CLOUD LIVE BROADCAST ---
-                // Grab the code, trim spaces, and force uppercase to match the PC's hex topic
                 const code = pairingInput.value.trim().toUpperCase();
-
                 if (code && mqttClient.connected) {
-                    const payload = { catHex, seedHex, fqHex, locHex, grottoUrl, yabdUrl };
+                    const payload = { scanCount, catHex, seedHex, fqHex, locHex, grottoUrl, yabdUrl };
                     mqttClient.publish(`dq9/grotto/${code}`, JSON.stringify(payload));
                 }
 
                 stopScanner();
-                return; 
+                return;
             }
             requestAnimationFrame(scanLoop);
         }
