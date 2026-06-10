@@ -12,7 +12,7 @@
         
         <div style="background: #222; display: inline-block; padding: 10px; border-radius: 8px; margin-right: 10px; vertical-align: top; text-align: center;">
             <label for="modeSelect" style="font-size: 14px; font-weight: bold; color: #9CC6F7; display: block; margin-bottom: 5px;">Mode:</label>
-            <select id="modeSelect" style="padding: 8px; font-size: 14px; font-weight: bold; border-radius: 5px; background: #222; color: #fff; font-family: monospace; width: 150px; height: 37px; box-sizing: border-box;">
+            <select id="modeSelect" style="padding: 8px; font-size: 14px; font-weight: bold; border-radius: 5px; border: none; outline: none; background: #000; color: #fff; font-family: monospace; width: 120px; height: 37px; box-sizing: border-box;">
                 <option value="scanner" selected>Scanner</option>
                 <option value="receiver">Receiver</option>
             </select>
@@ -20,7 +20,7 @@
 
         <div style="background: #222; display: inline-block; padding: 10px; border-radius: 8px; vertical-align: top; text-align: center;">
             <label for="pairingCode" style="font-size: 14px; font-weight: bold; color: #9CC6F7; display: block; margin-bottom: 5px;">Room ID:</label>
-            <input type="text" id="pairingCode" placeholder="0032" maxlength="4" style="padding: 8px; font-size: 16px; font-weight: bold; border-radius: 5px; background: #222; color: #fff; text-align: center; width: 120px; font-family: monospace; text-transform: uppercase; height: 37px; box-sizing: border-box;">
+            <input type="text" id="pairingCode" placeholder="0032" maxlength="4" style="padding: 8px; font-size: 16px; font-weight: bold; border-radius: 5px; border: none; outline: none; background: #000; color: #fff; text-align: center; width: 120px; font-family: monospace; text-transform: uppercase; height: 37px; box-sizing: border-box;">
             <span id="cloudStatus" style="font-size: 12px; display: block; margin-top: 5px; color: #FFBD63;">Connecting...</span>
         </div>
 
@@ -35,7 +35,7 @@
     </div>
 
     <button id="toggleBtn" style="padding: 12px 24px; font-size: 16px; font-weight: bold; font-family: monospace; background: #52C618; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 15px;">
-        Start Scanner
+        Scan
     </button>
 
     <div style="max-width: 600px; margin-left: auto; margin-right: auto; background: #222; padding: 8px; border-radius: 8px;">
@@ -88,7 +88,7 @@
                 .then(s => {
                     stream = s;
                     video.srcObject = s;
-                    toggleBtn.innerText = "Stop Scanner";
+                    toggleBtn.innerText = "Stop";
                     toggleBtn.style.background = "#FF0808";
                     isScanning = true;
                     scanLoop();
@@ -99,7 +99,7 @@
         function stopScanner() {
             if (stream) stream.getTracks().forEach(t => t.stop());
             video.srcObject = null;
-            toggleBtn.innerText = "Start Scanner";
+            toggleBtn.innerText = "Scan";
             toggleBtn.style.background = "#52C618";
             isScanning = false;
             ctx.fillStyle = "black";
