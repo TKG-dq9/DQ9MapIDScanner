@@ -197,6 +197,14 @@
             }
             requestAnimationFrame(scanLoop);
         }
+
+        // Switch pages based on dropdown selection
+        document.getElementById("modeSelect").addEventListener("change", (e) => {
+            if (e.target.value === "receiver") {
+                window.location.href = "receiver/index.html";
+            }
+        });
+
     </script>
 </body>
 </html>
