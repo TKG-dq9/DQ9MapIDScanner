@@ -10,17 +10,17 @@
 
     <div style="margin-bottom: 15px; display: inline-block;">
         
-        <div style="background: #313131; display: inline-block; padding: 10px; border-radius: 8px; border: 1px dashed #9CC6F7; margin-right: 10px; vertical-align: top; text-align: left;">
+        <div style="background: #222; display: inline-block; padding: 10px; border-radius: 8px; margin-right: 10px; vertical-align: top; text-align: center;">
             <label for="modeSelect" style="font-size: 14px; font-weight: bold; color: #9CC6F7; display: block; margin-bottom: 5px;">Mode:</label>
-            <select id="modeSelect" style="padding: 8px; font-size: 14px; font-weight: bold; border-radius: 5px; border: 1px solid #555; background: #222; color: #fff; font-family: monospace; width: 150px; height: 37px; box-sizing: border-box;">
+            <select id="modeSelect" style="padding: 8px; font-size: 14px; font-weight: bold; border-radius: 5px; background: #222; color: #fff; font-family: monospace; width: 150px; height: 37px; box-sizing: border-box;">
                 <option value="scanner" selected>Scanner</option>
                 <option value="receiver">Receiver</option>
             </select>
         </div>
 
-        <div style="background: #313131; display: inline-block; padding: 10px; border-radius: 8px; border: 1px dashed #9CC6F7; vertical-align: top; text-align: center;">
+        <div style="background: #222; display: inline-block; padding: 10px; border-radius: 8px; vertical-align: top; text-align: center;">
             <label for="pairingCode" style="font-size: 14px; font-weight: bold; color: #9CC6F7; display: block; margin-bottom: 5px;">Room ID:</label>
-            <input type="text" id="pairingCode" placeholder="0032" maxlength="4" style="padding: 8px; font-size: 16px; font-weight: bold; border-radius: 5px; border: 1px solid #555; background: #222; color: #fff; text-align: center; width: 120px; font-family: monospace; text-transform: uppercase; height: 37px; box-sizing: border-box;">
+            <input type="text" id="pairingCode" placeholder="0032" maxlength="4" style="padding: 8px; font-size: 16px; font-weight: bold; border-radius: 5px; background: #222; color: #fff; text-align: center; width: 120px; font-family: monospace; text-transform: uppercase; height: 37px; box-sizing: border-box;">
             <span id="cloudStatus" style="font-size: 12px; display: block; margin-top: 5px; color: #FFBD63;">Connecting...</span>
         </div>
 
@@ -34,16 +34,15 @@
         <canvas id="c" style="width: 100%; max-width: 360px; aspect-ratio: 4/3; background: #000; border: 2px solid #555; border-radius: 8px;"></canvas>
     </div>
 
-    <button id="toggleBtn" style="padding: 12px 24px; font-size: 16px; font-weight: bold; background: #52C618; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 15px;">
+    <button id="toggleBtn" style="padding: 12px 24px; font-size: 16px; font-weight: bold; font-family: monospace; background: #52C618; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 15px;">
         Start Scanner
     </button>
 
-    <div style="max-width: 600px; margin-left: auto; margin-right: auto; background: #313131; padding: 8px; border-radius: 8px;">
+    <div style="max-width: 600px; margin-left: auto; margin-right: auto; background: #222; padding: 8px; border-radius: 8px;">
         <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 13px; color: #FFF;">
             <thead>
-                <tr style="border-bottom: 2px solid #666;">
+                <tr style="border-bottom: 2px solid #555;">
                     <th style="vertical-align: middle;">#</th>
-                    <th style="vertical-align: middle;">FQ</th>
                     <th style="vertical-align: middle;">Rank</th>
                     <th style="vertical-align: middle;">Seed</th>
                     <th style="vertical-align: middle;">@</th>
@@ -161,7 +160,7 @@
                 buffer = [];
             }
 
-            ctx.strokeStyle = validFrame ? "cyan" : "lime";
+            ctx.strokeStyle = validFrame ? "#9CC6F7" : "#52C618";
             ctx.lineWidth = 6;
             ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
 
@@ -182,13 +181,13 @@
                 
                 const row = logBody.insertRow(0);
                 scanCount++;
-                row.innerHTML = `<td>${scanCount}</td><td>${fqHex}</td><td>${catHex}</td><td>${seedHex}</td><td>${locHex}</td>
+                row.innerHTML = `<td>${scanCount}</td><td>${catHex}</td><td>${seedHex}</td><td>${locHex}</td>
                                  <td><a href="${grottoUrl}" target="_blank" style="color:#9CC6F7">Link</a></td>
                                  <td><a href="${yabdUrl}" target="_blank" style="color:#9CC6F7">Link</a></td>`;
                 
                 const code = pairingInput.value.trim().toUpperCase();
                 if (code && mqttClient.connected) {
-                    const payload = { scanCount, catHex, seedHex, fqHex, locHex, grottoUrl, yabdUrl };
+                    const payload = { scanCount, catHex, seedHex, locHex, grottoUrl, yabdUrl };
                     mqttClient.publish(`dq9/grotto/${code}`, JSON.stringify(payload));
                 }
 
