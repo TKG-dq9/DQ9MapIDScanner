@@ -12,7 +12,7 @@
         
         <div style="background: #222; display: inline-block; padding: 10px; border-radius: 8px; margin-right: 10px; vertical-align: top; text-align: center;">
             <label for="modeSelect" style="font-size: 15px; font-weight: bold; color: #9CC6F7; display: block; margin-bottom: 10px;">Mode:</label>
-            <select id="modeSelect" style="padding: 8px; font-size: 15px; font-weight: bold; border-radius: 5px; border: none; outline: none; background: #000; color: #fff; font-family: monospace; width: 100px; height: 37px; box-sizing: border-box; text-align: center;">
+            <select id="modeSelect" style="padding: 8px; font-size: 15px; font-weight: bold; border-radius: 5px; border: none; outline: none; background: #000; color: #fff; font-family: monospace; width: 100px; text-align: center;">
                 <option value="scanner" selected>Scanner</option>
                 <option value="receiver">Receiver</option>
             </select>
@@ -21,7 +21,7 @@
         <div style="background: #222; display: inline-block; padding: 10px; border-radius: 8px; vertical-align: top; text-align: center;">
             <label for="pairingCode" style="font-size: 15px; font-weight: bold; color: #9CC6F7; display: block; margin-bottom: 5px;">Room ID:</label>
             <input type="text" id="pairingCode" placeholder="----" maxlength="4" style="padding: 8px; font-size: 15px; font-weight: bold; border-radius: 5px; border: none; outline: none; background: #000; color: #fff; text-align: center; width: 80px; font-family: monospace; text-transform: uppercase; height: 37px; box-sizing: border-box;">
-            <span id="cloudStatus" style="font-size: 12px; display: block; margin-top: 5px; color: #FFBD63;">Connecting...</span>
+            <span id="cloudStatus" style="font-size: 12px; display: block; margin-top: 5px; color: #FFC600;">Connecting</span>
         </div>
 
     </div>
@@ -48,6 +48,7 @@
                     <th style="vertical-align: middle;">@</th>
                     <th style="vertical-align: middle;">Grotto<br>Searcher</th>
                     <th style="vertical-align: middle;">yab's DQ9<br>Tools</th>
+                    <th style="vertical-align: middle;">A-Table<br>Generator</th>
                 </tr>
             </thead>
             <tbody id="logBody"></tbody>
@@ -178,16 +179,18 @@
                 
                 const grottoUrl = `https://dqix.github.io/Grotto-Searcher/?id=${catHex}${seedHex}`;
                 const yabdUrl = `https://www.yabd.org/apps/dq9/grottodetails.php?map=${catHex}${seedHex}`;
+                const atUrl = `http://dq9.s1001.xrea.com/rndnum1.cgi?seed=${seedHex}`;
                 
                 const row = logBody.insertRow(0);
                 scanCount++;
                 row.innerHTML = `<td>${scanCount}</td><td>${catHex}</td><td>${seedHex}</td><td>${locHex}</td>
                                  <td><a href="${grottoUrl}" target="_blank" style="color:#9CC6F7">Link</a></td>
-                                 <td><a href="${yabdUrl}" target="_blank" style="color:#9CC6F7">Link</a></td>`;
+                                 <td><a href="${yabdUrl}" target="_blank" style="color:#9CC6F7">Link</a></td>
+                                 <td><a href="${atUrl}" target="_blank" style="color:#9CC6F7">Link</a></td>`;
                 
                 const code = pairingInput.value.trim().toUpperCase();
                 if (code && mqttClient.connected) {
-                    const payload = { scanCount, catHex, seedHex, locHex, grottoUrl, yabdUrl };
+                    const payload = { scanCount, catHex, seedHex, locHex, grottoUrl, yabdUrl, atUrl };
                     mqttClient.publish(`dq9/grotto/${code}`, JSON.stringify(payload));
                 }
 
