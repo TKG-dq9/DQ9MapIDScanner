@@ -8,12 +8,24 @@
 </head>
 <body style="font-family: monospace; background: #000; color: #fff; margin: 0; padding: 20px; text-align: center;">
 
-    <div style="background: #424242; border: 1px dashed #9CC6F7; display: inline-block; padding: 15px 40px; border-radius: 10px; margin: 20px auto;">
-        <span style="font-size: 15px; font-weight: bold; letter-spacing: 1px; color: #9CC6F7; display: block;">Room ID:</span>
-        <span id="codeDisplay" style="font-size: 48px; font-weight: bold; font-family: monospace; color: #fff; letter-spacing: 4px;">----</span>
+    <div style="margin: 20px auto; display: inline-block;">
+        
+        <div style="background: #313131; border: 1px dashed #9CC6F7; display: inline-block; padding: 15px 20px; border-radius: 10px; margin-right: 15px; vertical-align: middle; text-align: left;">
+            <label for="modeSelect" style="font-size: 15px; font-weight: bold; letter-spacing: 1px; color: #9CC6F7; display: block; margin-bottom: 10px;">Mode:</label>
+            <select id="modeSelect" style="padding: 8px; font-size: 14px; font-weight: bold; border-radius: 5px; border: 1px solid #555; background: #222; color: #fff; font-family: monospace; width: 150px;">
+                <option value="scanner" selected>Mobile Scanner</option>
+                <option value="receiver">PC Receiver</option>
+            </select>
+        </div>
+
+        <div style="background: #313131; border: 1px dashed #9CC6F7; display: inline-block; padding: 15px 40px; border-radius: 10px; vertical-align: middle;">
+            <span style="font-size: 15px; font-weight: bold; letter-spacing: 1px; color: #9CC6F7; display: block;">Room ID:</span>
+            <span id="codeDisplay" style="font-size: 48px; font-weight: bold; font-family: monospace; color: #fff; letter-spacing: 4px;">----</span>
+        </div>
+
     </div>
 
-    <div style="max-width: 700px; margin: 30px auto 0 auto; background: #424242; padding: 15px; border-radius: 8px; border: 1px solid #444;">
+    <div style="max-width: 700px; margin: 30px auto 0 auto; background: #313131; padding: 15px; border-radius: 8px; border: 1px solid #444;">
         <table style="width: 100%; border-collapse: collapse; text-align: center; margin: 0 auto; font-family: monospace; font-size: 15px;">
             <thead>
                <tr style="border-bottom: 2px solid #555; color: #fff;">
@@ -30,23 +42,19 @@
 
         let firstScan = true;
 
-        // 1. Generate a random 4-digit hex pairing code (0000 to FFFF)
         const randomNum = Math.floor(Math.random() * 65536);
         const pairingCode = randomNum.toString(16).toUpperCase().padStart(4, '0');
         codeDisplay.innerText = pairingCode;
 
-        // 2. Connect to the public broker
         const client = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
 
         client.on('connect', () => {
-            // Subscribe to this specific room's channel
             client.subscribe(`dq9/grotto/${pairingCode}`);
         });
 
         client.on('message', (topic, message) => {
             const data = JSON.parse(message.toString());
 
-            // Add item to the rolling table
             const row = pcLogBody.insertRow(0);
             row.style.borderBottom = "1px solid #333";
             row.style.height = "40px";
