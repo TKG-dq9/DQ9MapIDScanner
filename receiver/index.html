@@ -14,7 +14,7 @@
     </div>
 
     <div id="alertPanel" style="max-width: 500px; margin: 20px auto; background: #333; padding: 20px; border-radius: 10px; border-left: 5px solid #ff9800; display: none; text-align: left; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-        <h3 style="margin-top:0; margin-bottom: 5px; color: #ff9800; font-size: 16px;">New Map Detected</h3>
+        <h3 id="alertTitle" style="margin-top:0; margin-bottom: 5px; color: #ff9800; font-size: 16px;">New Map Detected</h3>
         
         <p id="mapSummaryDisplay" style="font-family: monospace; font-size: 32px; font-weight: bold; margin: 15px 0; color: #00bcd4; letter-spacing: 2px; text-align: center; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; border: 1px solid #444;">
            -- ---- @ --
@@ -44,6 +44,7 @@
         const codeDisplay = document.getElementById("codeDisplay");
         const pcLogBody = document.getElementById("pcLogBody");
         const alertPanel = document.getElementById("alertPanel");
+        const alertTitle = document.getElementById("alertTitle");
         const mapIdDisplay = document.getElementById("mapIdDisplay");
         const rankDisplay = document.getElementById("rankDisplay");
         const locDisplay = document.getElementById("locDisplay");
@@ -69,11 +70,12 @@
             const data = JSON.parse(message.toString());
             
             if (firstScan) {
-                pcLogBody.innerHTML = ""; // Clear placeholder text
+                if (placeholderRow) placeholderRow.remove();
                 firstScan = false;
             }
 
             // Update the prominent notification panel
+            alertTitle.innerText = `New Map Detected (Scan #${data.scanCount})`;
             mapIdDisplay.innerText = `${data.catHex}${data.seedHex}`;
             rankDisplay.innerText = data.fqHex;
             locDisplay.innerText = data.locHex;
@@ -84,20 +86,17 @@
             // Add item to the rolling table below
             const row = pcLogBody.insertRow(0);
             row.style.borderBottom = "1px solid #333";
+            row.style.height = "40px";
+            
             row.innerHTML = `
+                <td>${data.scanCount}</td>
+                <td>${data.catHex}${data.seedHex}</td>
+                <td>${data.locHex}</td>
                 <td>${data.fqHex}</td>
-                <td>${data.catHex}</td>
-                <td>${data.seedHex}</td>
-                <td${data.locHex}</td>
                 <td>
-                    <a href="${data.grottoUrl}" target="_blank" style="color:#00bcd4; margin-right:10px;">Link</a>
-                    <a href="${data.yabdUrl}" target="_blank" style="color:#00bcd4;">Link</a>
-                </td>
+                <td><a href="${data.grottoUrl}" target="_blank" style="color:#00bcd4; text-decoration:none;">Link</a></td>
+                <td><a href="${data.yabdUrl}" target="_blank" style="color:#00bcd4; text-decoration:none;">Link</a></td>
             `;
-
-            // Note: Automated window.open(data.grottoUrl) will be blocked by browsers 
-            // unless triggered directly by a physical mouse click. Showing the big action buttons 
-            // inside the alertPanel keeps the workflow perfectly fluid without annoying pop-up blocker popups!
         });
     </script>
 </body>
