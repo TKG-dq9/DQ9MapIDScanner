@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DQ9 Map Loader</title>
+</head>
+<body style="font-family: monospace; background:#000; color:#fff; margin:0; padding:10px; text-align:center;">
+
+    <!-- MODE BOX -->
+    <div style="margin-bottom:15px; display:inline-block;">
+
+        <div style="background:#222; display:inline-block; padding:10px; border-radius:8px; vertical-align:top; text-align:center;">
+            <label style="font-size:15px; font-weight:bold; color:#9CC6F7; display:block; margin-bottom:10px;">
+                Mode:
+            </label>
+
+            <select id="modeSelect"
+                style="padding:8px; font-size:15px; font-weight:bold; border-radius:5px;
+                border:none; outline:none; background:#000; color:#fff;
+                font-family:monospace; width:100px; text-align:center;">
+
+                <option value="scanner">Scanner</option>
+                <option value="receiver">Receiver</option>
+                <option value="loader" selected>Loader</option>
+
+            </select>
+        </div>
+
+        <!-- INPUT BOX -->
+        <div style="background:#222; display:inline-block; padding:10px; border-radius:8px; margin-left:10px; vertical-align:top;">
+
+        <div style="margin-bottom:6px; display:flex; align-items:center;">
+            <div style="width:50px; text-align:right; margin-right:8px;">FQ:</div>
+            <input id="fqInput"
+                placeholder="02"
+                maxlength="2"
+                style="width:80px; padding:8px; text-align:center;
+                font-family:monospace; font-weight:bold;
+                background:#000; color:#fff; border:none; border-radius:5px;">
+        </div>
+
+        <div style="margin-bottom:6px; display:flex; align-items:center;">
+            <div style="width:50px; text-align:right; margin-right:8px;">Seed:</div>
+            <input id="seedInput"
+                placeholder="0032"
+                maxlength="4"
+                style="width:80px; padding:8px; text-align:center;
+                font-family:monospace; font-weight:bold;
+                background:#000; color:#fff; border:none; border-radius:5px;">
+        </div>
+
+        <div style="display:flex; align-items:center;">
+            <div style="width:50px; text-align:right; margin-right:8px;">@:</div>
+            <input id="locInput"
+                placeholder="05"
+                maxlength="2"
+                style="width:80px; padding:8px; text-align:center;
+                font-family:monospace; font-weight:bold;
+                background:#000; color:#fff; border:none; border-radius:5px;">
+        </div>
+
+        </div>
+
+    </div>
+
+    <!-- GRID -->
+    <div style="margin-bottom:15px;">
+        <canvas id="gridCanvas"
+            style="border:2px solid #555; border-radius:8px; max-width:100%;">
+        </canvas>
+    </div>
+
+    <!-- SAVE BUTTON -->
+    <button id="saveBtn"
+        style="padding:12px 24px;
+        font-size:16px;
+        font-weight:bold;
+        font-family:monospace;
+        background:#52C618;
+        color:white;
+        border:none;
+        border-radius:5px;
+        cursor:pointer;">
+
+        Export
+
+    </button>
+
+<script>
+
+const canvas = document.getElementById("gridCanvas");
+const ctx = canvas.getContext("2d");
+
+const fqInput = document.getElementById("fqInput");
+const seedInput = document.getElementById("seedInput");
+const locInput = document.getElementById("locInput");
+
+const TILE_SIZE = 20;
+
+const GRID_W = 32;
+const GRID_H = 24;
+
+canvas.width = GRID_W * TILE_SIZE;
+canvas.height = GRID_H * TILE_SIZE;
+
+function hexToBits(value, bitCount)
+{
+    return value
+        .toString(2)
+        .padStart(bitCount, "0")
+        .split("")
+        .map(Number);
+}
+
+function drawTile(tx, ty, color)
+{
+    ctx.fillStyle = color;
+
+    ctx.fillRect(
+        tx * TILE_SIZE,
+        ty * TILE_SIZE,
+        TILE_SIZE,
+        TILE_SIZE
+    );
+}
+
+function drawBit(bit, tileX, tileY)
+{
+    const color = bit ? "#000000" : "#FFFFFF";
+
+    for(let y=0; y<2; y++)
+    {
+        for(let x=0; x<2; x++)
+        {
+            drawTile(tileX + x, tileY + y, color);
+        }
+    }
+}
+
+function drawBitRow(bits, startCol, startRow)
+{
+    bits.forEach((bit, i)=>
+    {
+        const x = startCol + i * 4;
+        drawBit(bit, x, startRow);
+    });
+}
+
+function redraw()
+{
+    ctx.fillStyle = "#FF00FF";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+
+    const fq =
+        parseInt(fqInput.value || "02", 16);
+
+    const seed =
+        parseInt(seedInput.value || "0032", 16);
+
+    const loc =
+        parseInt(locInput.value || "05", 16);
+
+    const fqBits = hexToBits(fq, 8);
+
+    const seedBits = hexToBits(seed, 16);
+
+    const seedRow1 = seedBits.slice(0,8);
+    const seedRow2 = seedBits.slice(8,16);
+
+    const locBits = hexToBits(loc, 8);
+
+    drawBitRow(fqBits, 1, 5);
+
+    drawBitRow(seedRow1, 1, 9);
+
+    drawBitRow(seedRow2, 1, 13);
+
+    drawBitRow(locBits, 1, 17);
+}
+
+[fqInput, seedInput, locInput].forEach(input =>
+{
+    input.addEventListener("input", () =>
+    {
+        input.value = input.value
+            .toUpperCase()
+            .replace(/[^0-9A-F]/g, "");
+
+        redraw();
+    });
+});
+
+redraw();
+
+document.getElementById("saveBtn").addEventListener("click", () =>
+{
+    const fqHex =
+        (fqInput.value || "02")
+        .toUpperCase()
+        .padStart(2, "0");
+
+    const seedHex =
+        (seedInput.value || "0032")
+        .toUpperCase()
+        .padStart(4, "0");
+
+    const locHex =
+        (locInput.value || "05")
+        .toUpperCase()
+        .padStart(2, "0");
+
+    const mapId = fqHex + seedHex + locHex;
+
+    const exportCanvas = document.createElement("canvas");
+    exportCanvas.width = 256;
+    exportCanvas.height = 192;
+
+    const exportCtx = exportCanvas.getContext("2d");
+
+    exportCtx.imageSmoothingEnabled = false;
+
+    exportCtx.drawImage(
+        canvas,
+        0,
+        0,
+        256,
+        192
+    );
+
+    const link = document.createElement("a");
+
+    link.download = `DQ9MapID_${mapId}.png`;
+
+    link.href = exportCanvas.toDataURL("image/png");
+
+    link.click();
+});
+
+document.getElementById("modeSelect").addEventListener("change", (e) =>
+{
+    if(e.target.value === "scanner")
+    {
+        window.location.href = "../index.html";
+    }
+
+    if(e.target.value === "receiver")
+    {
+        window.location.href = "../receiver/index.html";
+    }
+});
+
+</script>
+
+</body>
+</html>
