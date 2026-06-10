@@ -11,7 +11,7 @@
     <div style="margin-bottom: 15px; background: #424242; display: inline-block; padding: 10px; border-radius: 8px; border: 2px solid #9CC6F7;">
         <label for="pairingCode" style="font-size: 14px; font-weight: bold; color: #9CC6F7; display: block; margin-bottom: 5px;">Room ID:</label>
         <input type="text" id="pairingCode" placeholder="0032" maxlength="4" style="padding: 8px; font-size: 16px; font-weight: bold; border-radius: 5px; border: 1px solid #555; background: #222; color: #fff; text-align: center; width: 120px; font-family: monospace; text-transform: uppercase;">
-        <span id="cloudStatus" style="font-size: 12px; display: block; margin-top: 5px; color: #FFBD63;">Connecting to Cloud...</span>
+        <span id="cloudStatus" style="font-size: 12px; display: block; margin-top: 5px; color: #FFBD63;">Connecting...</span>
     </div>
 
     <div>
@@ -30,7 +30,7 @@
         <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 13px;">
             <thead>
                 <tr style="border-bottom: 2px solid #666; color: #FFF;">
-                    <th>#</th><th>FQ</th><th>Rank</th><th>Seed</th><th>@</th><th>MelonGx</th><th>yab</th>
+                    <th>#</th><th>FQ</th><th>Rank</th><th>Seed</th><th>@</th><th>Grotto Searcher</th><th>yab's DQ9 Tools</th>
                 </tr>
             </thead>
             <tbody id="logBody"></tbody>
@@ -58,7 +58,7 @@
         });
 
         mqttClient.on('error', () => {
-            cloudStatus.innerText = "Cloud Connection Offline";
+            cloudStatus.innerText = "Cloud Offline";
             cloudStatus.style.color = "#FF0808";
         });
 
