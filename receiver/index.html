@@ -31,7 +31,7 @@
         <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 14px;">
             <thead>
                 <tr style="border-bottom: 2px solid #555; color: #aaa;">
-                    <th style="padding: 10px;">FQ</th><th>Rank</th><th>Seed</th><th>@</th><th>MelonGx</th><th>yab</th>
+                    <th style="padding: 10px;">#</th><th>FQ</th><th>Rank</th><th>Seed</th><th>@</th><th>MelonGx</th><th>yab</th>
                 </tr>
             </thead>
             <tbody id="pcLogBody">
@@ -67,7 +67,7 @@
             const data = JSON.parse(message.toString());
             
             if (firstScan) {
-                pcLogBody.innerHTML = "";
+                pcLogBody.innerHTML = ""; // Simply clear the body
                 firstScan = false;
             }
 
@@ -86,9 +86,10 @@
             
             row.innerHTML = `
                 <td>${data.scanCount}</td>
-                <td>${data.catHex}${data.seedHex}</td>
-                <td>${data.locHex}</td>
                 <td>${data.fqHex}</td>
+                <td>${data.catHex}</td>
+                <td>${data.seedHex}</td>
+                <td>${data.locHex}</td>
                 <td><a href="${data.grottoUrl}" target="_blank" style="color:#00bcd4; text-decoration:none;">Link</a></td>
                 <td><a href="${data.yabdUrl}" target="_blank" style="color:#00bcd4; text-decoration:none;">Link</a></td>
             `;
