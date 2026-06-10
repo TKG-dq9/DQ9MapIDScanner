@@ -6,12 +6,12 @@
     <title>DQ9 Map Scanner</title>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
-<body style="font-family: sans-serif; background: #222; color: #fff; margin: 0; padding: 10px; text-align: center;">
+<body style="font-family: monospace; background: #313131; color: #fff; margin: 0; padding: 10px; text-align: center;">
 
-    <div style="margin-bottom: 15px; background: #333; display: inline-block; padding: 10px; border-radius: 8px; border: 1px solid #444;">
-        <label for="pairingCode" style="font-size: 14px; font-weight: bold; color: #00bcd4; display: block; margin-bottom: 5px;">Room ID:</label>
+    <div style="margin-bottom: 15px; background: #424242; display: inline-block; padding: 10px; border-radius: 8px; border: 1px solid #444;">
+        <label for="pairingCode" style="font-size: 14px; font-weight: bold; color: #9CC6F7; display: block; margin-bottom: 5px;">Room ID:</label>
         <input type="text" id="pairingCode" placeholder="0032" maxlength="4" style="padding: 8px; font-size: 16px; font-weight: bold; border-radius: 5px; border: 1px solid #555; background: #222; color: #fff; text-align: center; width: 120px; font-family: monospace; text-transform: uppercase;">
-        <span id="cloudStatus" style="font-size: 12px; display: block; margin-top: 5px; color: #ff9800;">Connecting to Cloud...</span>
+        <span id="cloudStatus" style="font-size: 12px; display: block; margin-top: 5px; color: #FFBD63;">Connecting to Cloud...</span>
     </div>
 
     <div>
@@ -22,14 +22,14 @@
         <canvas id="c" style="width: 100%; max-width: 360px; aspect-ratio: 4/3; background: #000; border: 2px solid #555; border-radius: 8px;"></canvas>
     </div>
 
-    <button id="toggleBtn" style="padding: 12px 24px; font-size: 16px; font-weight: bold; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 15px;">
+    <button id="toggleBtn" style="padding: 12px 24px; font-size: 16px; font-weight: bold; background: #52C618; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 15px;">
         Start Scanner
     </button>
 
     <div style="max-width: 600px; margin-left: auto; margin-right: auto; background: #333; padding: 8px; border-radius: 8px;">
         <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 13px;">
             <thead>
-                <tr style="border-bottom: 2px solid #666; color: #00bcd4;">
+                <tr style="border-bottom: 2px solid #666; color: #FFF;">
                     <th>#</th><th>FQ</th><th>Rank</th><th>Seed</th><th>@</th><th>MelonGx</th><th>yab</th>
                 </tr>
             </thead>
@@ -54,12 +54,12 @@
 
         mqttClient.on('connect', () => {
             cloudStatus.innerText = "Ready to join";
-            cloudStatus.style.color = "#4CAF50";
+            cloudStatus.style.color = "#52C618";
         });
 
         mqttClient.on('error', () => {
             cloudStatus.innerText = "Cloud Connection Offline";
-            cloudStatus.style.color = "#f44336";
+            cloudStatus.style.color = "#FF0808";
         });
 
         toggleBtn.addEventListener("click", () => {
@@ -73,7 +73,7 @@
                     stream = s;
                     video.srcObject = s;
                     toggleBtn.innerText = "Stop Scanner";
-                    toggleBtn.style.background = "#f44336";
+                    toggleBtn.style.background = "#FF0808";
                     isScanning = true;
                     scanLoop();
                 })
@@ -84,7 +84,7 @@
             if (stream) stream.getTracks().forEach(t => t.stop());
             video.srcObject = null;
             toggleBtn.innerText = "Start Scanner";
-            toggleBtn.style.background = "#4CAF50";
+            toggleBtn.style.background = "#52C618";
             isScanning = false;
             ctx.fillStyle = "black";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -166,8 +166,8 @@
                 const row = logBody.insertRow(0);
                 scanCount++;
                 row.innerHTML = `<td>${scanCount}</td><td>${fqHex}</td><td>${catHex}</td><td>${seedHex}</td><td>${locHex}</td>
-                                 <td><a href="${grottoUrl}" target="_blank" style="color:#00bcd4">Link</a></td>
-                                 <td><a href="${yabdUrl}" target="_blank" style="color:#00bcd4">Link</a></td>`;
+                                 <td><a href="${grottoUrl}" target="_blank" style="color:#9CC6F7">Link</a></td>
+                                 <td><a href="${yabdUrl}" target="_blank" style="color:#9CC6F7">Link</a></td>`;
                 
                 // --- CLOUD LIVE BROADCAST ---
                 const code = pairingInput.value.trim().toUpperCase();
