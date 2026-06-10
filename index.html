@@ -4,31 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DQ9 Map Scanner</title>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
 <body style="font-family: sans-serif; background: #222; color: #fff; margin: 0; padding: 10px; text-align: center;">
 
-    <video id="cam" autoplay playsinline style="display:none;"></video>
+    <div style="margin-bottom: 15px; background: #333; display: inline-block; padding: 10px; border-radius: 8px; border: 1px solid #444;">
+        <label for="pairingCode" style="font-size: 14px; font-weight: bold; color: #00bcd4; display: block; margin-bottom: 5px;">PC Pairing Code:</label>
+        <input type="text" id="pairingCode" placeholder="0032" maxlength="4" style="padding: 8px; font-size: 16px; font-weight: bold; border-radius: 5px; border: 1px solid #555; background: #222; color: #fff; text-align: center; width: 120px; font-family: monospace; text-transform: uppercase;">
+        <span id="cloudStatus" style="font-size: 12px; display: block; margin-top: 5px; color: #ff9800;">Connecting to Cloud...</span>
+    </div>
 
+    <div>
+        <video id="cam" autoplay playsinline style="display:none;"></video>
+    </div>
+    
     <div style="margin-bottom: 10px;">
         <canvas id="c" style="width: 100%; max-width: 360px; aspect-ratio: 4/3; background: #000; border: 2px solid #555; border-radius: 8px;"></canvas>
     </div>
-
-    <div style="margin-bottom:10px;">
-        <input
-            id="serverIp"
-            type="text"
-            placeholder="192.168.1.67"
-            style="padding:8px; width:220px; font-size:16px;"
-        >
-    </div>
-
-    <div id="status" style="margin:8px; color:#aaa;">
-        Not connected
-    </div>
-
-    <button id="testBtn" style="padding:8px 16px; margin-bottom:10px;">
-        Test Connection
-    </button>
 
     <button id="toggleBtn" style="padding: 12px 24px; font-size: 16px; font-weight: bold; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 15px;">
         Start Scanner
@@ -45,250 +37,152 @@
         </table>
     </div>
 
-<script>
-const video = document.getElementById("cam");
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d");
-const logBody = document.getElementById("logBody");
-const toggleBtn = document.getElementById("toggleBtn");
-const status = document.getElementById("status");
-const serverIpInput = document.getElementById("serverIp");
+    <script>
+        const video = document.getElementById("cam");
+        const canvas = document.getElementById("c");
+        const ctx = canvas.getContext("2d");
+        const logBody = document.getElementById("logBody");
+        const toggleBtn = document.getElementById("toggleBtn");
+        const cloudStatus = document.getElementById("cloudStatus");
+        const pairingInput = document.getElementById("pairingCode");
 
-const COLS = 8, ROWS = 4, BUFFER_SIZE = 5;
-let buffer = [], stream = null, isScanning = false, scanCount = 0;
+        const COLS = 8, ROWS = 4, BUFFER_SIZE = 5;
+        let buffer = [], stream = null, isScanning = false, scanCount = 0;
 
-/* ---------------- CONNECTION TEST ---------------- */
-document.getElementById("testBtn").addEventListener("click", async () => {
-    const ip = serverIpInput.value.trim();
+        // Connect securely to the free anonymous public server
+        const mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
 
-    status.innerText = "Testing connection...";
-    status.style.color = "yellow";
-
-    if (!ip) {
-        status.innerText = "No IP entered";
-        status.style.color = "red";
-        return;
-    }
-
-    const url = `http://${ip}:3000/`;
-
-    // quick sanity display
-    status.innerText = `Testing: ${url}`;
-
-    try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 4000);
-
-        const res = await fetch(url, {
-            method: "GET",
-            signal: controller.signal
+        mqttClient.on('connect', () => {
+            cloudStatus.innerText = "☁️ Connected to Cloud Ready";
+            cloudStatus.style.color = "#4CAF50";
         });
 
-        clearTimeout(timeout);
+        mqttClient.on('error', () => {
+            cloudStatus.innerText = "❌ Cloud Connection Offline";
+            cloudStatus.style.color = "#f44336";
+        });
 
-        const text = await res.text();
+        toggleBtn.addEventListener("click", () => {
+            isScanning ? stopScanner() : startScanner();
+        });
 
-        status.innerText = `Connected: ${text}`;
-        status.style.color = "lime";
-
-    } catch (err) {
-
-        // 🔥 REAL ERROR BREAKDOWN
-        let reason = "Unknown error";
-
-        if (err.name === "AbortError") {
-            reason = "Timeout (phone cannot reach PC)";
-        }
-        else if (err.message.includes("Failed to fetch")) {
-            reason =
-                "Failed to fetch → likely:\n" +
-                "• wrong IP\n" +
-                "• PC firewall blocking port 3000\n" +
-                "• server not reachable on LAN\n" +
-                "• HTTP blocked by browser context";
-        }
-        else {
-            reason = err.message;
-        }
-
-        status.innerText = "Connection failed:\n" + reason;
-        status.style.color = "red";
-    }
-});
-
-/* ---------------- START / STOP ---------------- */
-toggleBtn.addEventListener("click", () => {
-    isScanning ? stopScanner() : startScanner();
-});
-
-function startScanner() {
-    buffer = [];
-
-    navigator.mediaDevices.getUserMedia({
-        video: { facingMode: { ideal: "environment" } }
-    }).then(s => {
-        stream = s;
-        video.srcObject = s;
-        toggleBtn.innerText = "Stop Scanner";
-        toggleBtn.style.background = "#f44336";
-        isScanning = true;
-        scanLoop();
-    }).catch(err => alert("Camera error: " + err.message));
-}
-
-function stopScanner() {
-    if (stream) stream.getTracks().forEach(t => t.stop());
-    video.srcObject = null;
-
-    toggleBtn.innerText = "Start Scanner";
-    toggleBtn.style.background = "#4CAF50";
-    isScanning = false;
-
-    ctx.fillStyle = "black";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-
-/* ---------------- RANK ---------------- */
-function categorizeRank(r) {
-    if (r >= 2 && r <= 55) return 0x02;
-    if (r <= 60) return 0x38;
-    if (r <= 75) return 0x3D;
-    if (r <= 80) return 0x4C;
-    if (r <= 100) return 0x51;
-    if (r <= 120) return 0x65;
-    if (r <= 140) return 0x79;
-    if (r <= 160) return 0x8D;
-    if (r <= 180) return 0xA1;
-    if (r <= 200) return 0xB5;
-    if (r <= 220) return 0xC9;
-    if (r <= 248) return 0xDD;
-    return r;
-}
-
-/* ---------------- SCAN LOOP ---------------- */
-function scanLoop() {
-    if (!isScanning) return;
-
-    if (canvas.width !== 640 || canvas.height !== 480) {
-        canvas.width = 640;
-        canvas.height = 480;
-    }
-
-    const vWidth = video.videoWidth;
-    const vHeight = video.videoHeight;
-
-    const ratio = Math.max(canvas.width / vWidth, canvas.height / vHeight);
-    const drawW = vWidth * ratio;
-    const drawH = vHeight * ratio;
-    const dx = (canvas.width - drawW) / 2;
-    const dy = (canvas.height - drawH) / 2;
-
-    ctx.drawImage(video, dx, dy, drawW, drawH);
-
-    const boxWidth = canvas.width * 0.7;
-    const boxHeight = boxWidth * (3 / 4);
-    const offsetX = (canvas.width - boxWidth) / 2;
-    const offsetY = (canvas.height - boxHeight) / 2;
-
-    const cellW = boxWidth / COLS;
-    const cellH = cellW;
-    const gridOffsetY = offsetY + (boxHeight - (cellH * ROWS)) / 2;
-
-    let bits = [];
-    let validFrame = true;
-
-    const corners = [
-        {x:offsetX+15, y:offsetY+15},
-        {x:offsetX+boxWidth-15, y:offsetY+15},
-        {x:offsetX+15, y:offsetY+boxHeight-15},
-        {x:offsetX+boxWidth-15, y:offsetY+boxHeight-15}
-    ];
-
-    for (let p of corners) {
-        let d = ctx.getImageData(Math.floor(p.x), Math.floor(p.y), 1, 1).data;
-        if (!(d[0] > 130 && d[1] < 130 && d[2] > 130)) validFrame = false;
-    }
-
-    if (validFrame) {
-        for (let y = 0; y < ROWS; y++) {
-            for (let x = 0; x < COLS; x++) {
-                let d = ctx.getImageData(
-                    Math.floor(offsetX + x*cellW + cellW/2),
-                    Math.floor(gridOffsetY + y*cellH + cellH/2),
-                    1, 1
-                ).data;
-
-                bits.push(((d[0]+d[1]+d[2])/3) < 100 ? 1 : 0);
-            }
-        }
-
-        buffer.push(bits);
-        if (buffer.length > BUFFER_SIZE) buffer.shift();
-    } else {
-        buffer = [];
-    }
-
-    ctx.strokeStyle = validFrame ? "cyan" : "lime";
-    ctx.lineWidth = 6;
-    ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
-
-    if (buffer.length === BUFFER_SIZE) {
-        const stable = buffer
-            .reduce((acc, f) => f.map((b, i) => b + (acc[i] || 0)))
-            .map(b => b > BUFFER_SIZE/2 ? 1 : 0);
-
-        const rawRank = parseInt(stable.slice(0,8).join(""), 2);
-        const seed = parseInt(stable.slice(8,24).join(""), 2);
-        const loc = parseInt(stable.slice(24,32).join(""), 2);
-
-        const catRank = categorizeRank(rawRank);
-
-        const fqHex = rawRank.toString(16).toUpperCase().padStart(2,'0');
-        const catHex = catRank.toString(16).toUpperCase().padStart(2,'0');
-        const seedHex = seed.toString(16).toUpperCase().padStart(4,'0');
-        const locHex = loc.toString(16).toUpperCase().padStart(2,'0');
-
-        const grottoUrl = `https://dqix.github.io/Grotto-Searcher/?id=${catHex}${seedHex}`;
-        const yabdUrl = `https://www.yabd.org/apps/dq9/grottodetails.php?map=${catHex}${seedHex}`;
-
-        const serverIp = serverIpInput.value.trim();
-
-        if (serverIp) {
-            fetch(`http://${serverIp}:3000/scan`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    fq: fqHex,
-                    rank: catHex,
-                    seed: seedHex,
-                    location: locHex,
-                    urls: [grottoUrl, yabdUrl]
+        function startScanner() {
+            buffer = [];
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: "environment" } } })
+                .then(s => {
+                    stream = s;
+                    video.srcObject = s;
+                    toggleBtn.innerText = "Stop Scanner";
+                    toggleBtn.style.background = "#f44336";
+                    isScanning = true;
+                    scanLoop();
                 })
-            })
-            .then(() => console.log("Sent to PC"))
-            .catch(err => console.error("Send failed:", err));
+                .catch(err => alert("Camera error: " + err.message));
         }
 
-        const row = logBody.insertRow(0);
-        scanCount++;
+        function stopScanner() {
+            if (stream) stream.getTracks().forEach(t => t.stop());
+            video.srcObject = null;
+            toggleBtn.innerText = "Start Scanner";
+            toggleBtn.style.background = "#4CAF50";
+            isScanning = false;
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
 
-        row.innerHTML = `
-            <td>${scanCount}</td>
-            <td>${fqHex}</td>
-            <td>${catHex}</td>
-            <td>${seedHex}</td>
-            <td>${locHex}</td>
-            <td><a href="${grottoUrl}" target="_blank" style="color:#00bcd4">Link</a></td>
-            <td><a href="${yabdUrl}" target="_blank" style="color:#00bcd4">Link</a></td>
-        `;
+        function categorizeRank(r) {
+            if (r >= 2 && r <= 55) return 0x02;
+            if (r <= 60) return 0x38; if (r <= 75) return 0x3D;
+            if (r <= 80) return 0x4C; if (r <= 100) return 0x51;
+            if (r <= 120) return 0x65; if (r <= 140) return 0x79;
+            if (r <= 160) return 0x8D; if (r <= 180) return 0xA1;
+            if (r <= 200) return 0xB5; if (r <= 220) return 0xC9;
+            if (r <= 248) return 0xDD;
+            return r;
+        }
 
-        stopScanner();
-        return;
-    }
+        function scanLoop() {
+            if (!isScanning) return;
+            if (canvas.width !== 640 || canvas.height !== 480) {
+                canvas.width = 640; canvas.height = 480;
+            }
 
-    requestAnimationFrame(scanLoop);
-}
-</script>
+            const vWidth = video.videoWidth;
+            const vHeight = video.videoHeight;
+            const ratio = Math.max(canvas.width / vWidth, canvas.height / vHeight);
+            const drawW = vWidth * ratio; const drawH = vHeight * ratio;
+            const dx = (canvas.width - drawW) / 2; const dy = (canvas.height - drawH) / 2;
 
+            ctx.drawImage(video, dx, dy, drawW, drawH);
+
+            const boxWidth = canvas.width * 0.7; 
+            const boxHeight = boxWidth * (3 / 4);
+            const offsetX = (canvas.width - boxWidth) / 2; 
+            const offsetY = (canvas.height - boxHeight) / 2;
+            const cellW = boxWidth / COLS; const cellH = cellW;
+            const gridOffsetY = offsetY + (boxHeight - (cellH * ROWS)) / 2;
+
+            let bits = [], validFrame = true;
+
+            const corners = [{x:offsetX+15, y:offsetY+15}, {x:offsetX+boxWidth-15, y:offsetY+15}, 
+                             {x:offsetX+15, y:offsetY+boxHeight-15}, {x:offsetX+boxWidth-15, y:offsetY+boxHeight-15}];
+            for (let p of corners) {
+                let d = ctx.getImageData(Math.floor(p.x), Math.floor(p.y), 1, 1).data;
+                if (!(d[0] > 130 && d[1] < 130 && d[2] > 130)) validFrame = false;
+            }
+
+            if (validFrame) {
+                for (let y = 0; y < ROWS; y++) {
+                    for (let x = 0; x < COLS; x++) {
+                        let d = ctx.getImageData(Math.floor(offsetX + x*cellW + cellW/2), Math.floor(gridOffsetY + y*cellH + cellH/2), 1, 1).data;
+                        bits.push(((d[0]+d[1]+d[2])/3) < 100 ? 1 : 0);
+                    }
+                }
+                buffer.push(bits);
+                if (buffer.length > BUFFER_SIZE) buffer.shift();
+            } else {
+                buffer = [];
+            }
+
+            ctx.strokeStyle = validFrame ? "cyan" : "lime";
+            ctx.lineWidth = 6;
+            ctx.strokeRect(offsetX, offsetY, boxWidth, boxHeight);
+
+            if (buffer.length === BUFFER_SIZE) {
+                const stable = buffer.reduce((acc, f) => f.map((b, i) => b + (acc[i] || 0)), []).map(b => b > BUFFER_SIZE/2 ? 1 : 0);
+                const rawRank = parseInt(stable.slice(0,8).join(""), 2);
+                const seed = parseInt(stable.slice(8,24).join(""), 2);
+                const loc = parseInt(stable.slice(24,32).join(""), 2);
+                const catRank = categorizeRank(rawRank);
+                
+                const fqHex = rawRank.toString(16).toUpperCase().padStart(2, '0');
+                const catHex = catRank.toString(16).toUpperCase().padStart(2, '0');
+                const seedHex = seed.toString(16).toUpperCase().padStart(4, '0');
+                const locHex = loc.toString(16).toUpperCase().padStart(2, '0');
+                
+                const grottoUrl = `https://dqix.github.io/Grotto-Searcher/?id=${catHex}${seedHex}`;
+                const yabdUrl = `https://www.yabd.org/apps/dq9/grottodetails.php?map=${catHex}${seedHex}`;
+                
+                const row = logBody.insertRow(0);
+                scanCount++;
+                row.innerHTML = `<td>${scanCount}</td><td>${fqHex}</td><td>${catHex}</td><td>${seedHex}</td><td>${locHex}</td>
+                                 <td><a href="${grottoUrl}" target="_blank" style="color:#00bcd4">Link</a></td>
+                                 <td><a href="${yabdUrl}" target="_blank" style="color:#00bcd4">Link</a></td>`;
+                
+                // --- CLOUD LIVE BROADCAST ---
+                // Grab the code, trim spaces, and force uppercase to match the PC's hex topic
+                const code = pairingInput.value.trim().toUpperCase();
+
+                if (code && mqttClient.connected) {
+                    const payload = { catHex, seedHex, fqHex, locHex, grottoUrl, yabdUrl };
+                    mqttClient.publish(`dq9/grotto/${code}`, JSON.stringify(payload));
+                }
+
+                stopScanner();
+                return; 
+            }
+            requestAnimationFrame(scanLoop);
+        }
+    </script>
 </body>
 </html>
