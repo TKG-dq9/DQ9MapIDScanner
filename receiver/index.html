@@ -10,7 +10,7 @@
 
     <div style="margin-bottom: 15px; display: inline-block;">
         
-        <div style="background: #222; display: inline-block; padding: 10px 20px; border-radius: 10px; margin-right: 15px; vertical-align: middle; text-align: center;">
+        <div style="background: #222; display: inline-block; padding: 10px 20px; border-radius: 10px; margin-right: 15px; vertical-align: top; text-align: center;">
             <label for="modeSelect" style="font-size: 15px; font-weight: bold; letter-spacing: 1px; color: #9CC6F7; display: block; margin-bottom: 10px;">Mode:</label>
             <select id="modeSelect" style="padding: 8px; font-size: 15px; font-weight: bold; border-radius: 5px; border: none; outline: none; background: #000; color: #fff; font-family: monospace; width: 100px; text-align: center;">
                 <option value="scanner">Scanner</option>
@@ -19,10 +19,32 @@
             </select>
         </div>
 
-        <div style="background: #222; display: inline-block; padding: 10px 20px; border-radius: 10px; vertical-align: middle;">
+        <div style="background: #222; display: inline-block; padding: 10px 20px; border-radius: 10px; vertical-align: top;">
             <span style="font-size: 15px; font-weight: bold; letter-spacing: 1px; color: #9CC6F7; display: block;">Room ID:</span>
             <span id="codeDisplay" style="font-size: 30px; font-weight: bold; font-family: monospace; color: #fff; letter-spacing: 4px;">----</span>
         </div>
+
+        <button id="copyBtn"
+            style="
+                padding:12px 24px;
+                font-size:16px;
+                font-weight:bold;
+                font-family:monospace;
+                background:#52C618;
+                color:white;
+                border:none;
+                border-radius:5px;
+                cursor:pointer;
+                width:80px;
+                margin-left:10px;
+
+                display:inline-flex;
+                align-items:center;
+                justify-content:center;
+                line-height:1;
+            ">
+            Copy
+        </button>
 
     </div>
 
@@ -59,7 +81,11 @@
             const row = pcLogBody.insertRow(0);
             row.style.borderBottom = "1px solid #333";
             row.style.height = "40px";
-            
+
+            row.dataset.grottoUrl = data.grottoUrl;
+            row.dataset.yabdUrl = data.yabdUrl;
+            row.dataset.atUrl = data.atUrl;
+
             row.innerHTML = `
                 <td>${data.scanCount}</td>
                 <td>${data.catHex}</td>
@@ -89,6 +115,48 @@
                 window.location.href = "../loader/index.html";
             }
 
+        });
+
+        document.getElementById("copyBtn").addEventListener("click", async () =>
+        {
+            let csv =
+                "#,Rank,Seed,@,Grotto Searcher,yab's DQ9 Tools,A-Table Generator\n";
+
+            [...pcLogBody.rows].forEach(row =>
+            {
+                const cells = row.cells;
+
+                csv += [
+                    cells[0].textContent,
+                    cells[1].textContent,
+                    cells[2].textContent,
+                    cells[3].textContent,
+                    row.dataset.grottoUrl,
+                    row.dataset.yabdUrl,
+                    row.dataset.atUrl
+                ].join(",") + "\n";
+            });
+
+            try
+            {
+                await navigator.clipboard.writeText(csv);
+
+                const btn = document.getElementById("copyBtn");
+                const original = btn.textContent;
+
+                btn.textContent = "Copied";
+                btn.style.background = "#106BFF";
+
+                setTimeout(() =>
+                {
+                    btn.textContent = original;
+                    btn.style.background = "#52C618";
+                }, 1000);
+            }
+            catch(err)
+            {
+                alert("Failed to copy CSV.");
+            }
         });
         
     </script>
