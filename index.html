@@ -8,10 +8,22 @@
 </head>
 <body style="font-family: monospace; background: #000; color: #fff; margin: 0; padding: 10px; text-align: center;">
 
-    <div style="margin-bottom: 15px; background: #424242; display: inline-block; padding: 10px; border-radius: 8px; border: 1px dashed #9CC6F7;">
-        <label for="pairingCode" style="font-size: 14px; font-weight: bold; color: #9CC6F7; display: block; margin-bottom: 5px;">Room ID:</label>
-        <input type="text" id="pairingCode" placeholder="0032" maxlength="4" style="padding: 8px; font-size: 16px; font-weight: bold; border-radius: 5px; border: 1px solid #555; background: #222; color: #fff; text-align: center; width: 120px; font-family: monospace; text-transform: uppercase;">
-        <span id="cloudStatus" style="font-size: 12px; display: block; margin-top: 5px; color: #FFBD63;">Connecting...</span>
+    <div style="margin-bottom: 15px; display: inline-block;">
+        
+        <div style="background: #313131; display: inline-block; padding: 10px; border-radius: 8px; border: 1px dashed #9CC6F7; margin-right: 10px; vertical-align: top; text-align: left;">
+            <label for="modeSelect" style="font-size: 14px; font-weight: bold; color: #9CC6F7; display: block; margin-bottom: 5px;">Mode:</label>
+            <select id="modeSelect" style="padding: 8px; font-size: 14px; font-weight: bold; border-radius: 5px; border: 1px solid #555; background: #222; color: #fff; font-family: monospace; width: 150px; height: 37px; box-sizing: border-box;">
+                <option value="scanner" selected>Scanner</option>
+                <option value="receiver">Receiver</option>
+            </select>
+        </div>
+
+        <div style="background: #313131; display: inline-block; padding: 10px; border-radius: 8px; border: 1px dashed #9CC6F7; vertical-align: top; text-align: center;">
+            <label for="pairingCode" style="font-size: 14px; font-weight: bold; color: #9CC6F7; display: block; margin-bottom: 5px;">Room ID:</label>
+            <input type="text" id="pairingCode" placeholder="0032" maxlength="4" style="padding: 8px; font-size: 16px; font-weight: bold; border-radius: 5px; border: 1px solid #555; background: #222; color: #fff; text-align: center; width: 120px; font-family: monospace; text-transform: uppercase; height: 37px; box-sizing: border-box;">
+            <span id="cloudStatus" style="font-size: 12px; display: block; margin-top: 5px; color: #FFBD63;">Connecting...</span>
+        </div>
+
     </div>
 
     <div>
@@ -26,7 +38,7 @@
         Start Scanner
     </button>
 
-    <div style="max-width: 600px; margin-left: auto; margin-right: auto; background: #333; padding: 8px; border-radius: 8px;">
+    <div style="max-width: 600px; margin-left: auto; margin-right: auto; background: #313131; padding: 8px; border-radius: 8px;">
         <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 13px; color: #FFF;">
             <thead>
                 <tr style="border-bottom: 2px solid #666;">
@@ -55,7 +67,6 @@
         const COLS = 8, ROWS = 4, BUFFER_SIZE = 5;
         let buffer = [], stream = null, isScanning = false, scanCount = 0;
 
-        // Connect securely to the free anonymous public server
         const mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
 
         mqttClient.on('connect', () => {
@@ -64,7 +75,7 @@
         });
 
         mqttClient.on('error', () => {
-            cloudStatus.innerText = "Cloud Offline";
+            cloudStatus.innerText = "Cloud offline";
             cloudStatus.style.color = "#FF0808";
         });
 
@@ -175,7 +186,6 @@
                                  <td><a href="${grottoUrl}" target="_blank" style="color:#9CC6F7">Link</a></td>
                                  <td><a href="${yabdUrl}" target="_blank" style="color:#9CC6F7">Link</a></td>`;
                 
-                // --- CLOUD LIVE BROADCAST ---
                 const code = pairingInput.value.trim().toUpperCase();
                 if (code && mqttClient.connected) {
                     const payload = { scanCount, catHex, seedHex, fqHex, locHex, grottoUrl, yabdUrl };
