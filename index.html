@@ -53,12 +53,12 @@
         const mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
 
         mqttClient.on('connect', () => {
-            cloudStatus.innerText = "☁️ Connected to Cloud Ready";
+            cloudStatus.innerText = "Ready to join";
             cloudStatus.style.color = "#4CAF50";
         });
 
         mqttClient.on('error', () => {
-            cloudStatus.innerText = "❌ Cloud Connection Offline";
+            cloudStatus.innerText = "Cloud Connection Offline";
             cloudStatus.style.color = "#f44336";
         });
 
