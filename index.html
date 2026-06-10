@@ -11,16 +11,16 @@
     <div style="margin-bottom: 15px; display: inline-block;">
         
         <div style="background: #222; display: inline-block; padding: 10px; border-radius: 8px; margin-right: 10px; vertical-align: top; text-align: center;">
-            <label for="modeSelect" style="font-size: 14px; font-weight: bold; color: #9CC6F7; display: block; margin-bottom: 5px;">Mode:</label>
-            <select id="modeSelect" style="padding: 8px; font-size: 14px; font-weight: bold; border-radius: 5px; border: none; outline: none; background: #000; color: #fff; font-family: monospace; width: 120px; height: 37px; box-sizing: border-box;">
+            <label for="modeSelect" style="font-size: 15px; font-weight: bold; color: #9CC6F7; display: block; margin-bottom: 10px;">Mode:</label>
+            <select id="modeSelect" style="padding: 8px; font-size: 15px; font-weight: bold; border-radius: 5px; border: none; outline: none; background: #000; color: #fff; font-family: monospace; width: 100px; height: 37px; box-sizing: border-box; text-align: center;">
                 <option value="scanner" selected>Scanner</option>
                 <option value="receiver">Receiver</option>
             </select>
         </div>
 
         <div style="background: #222; display: inline-block; padding: 10px; border-radius: 8px; vertical-align: top; text-align: center;">
-            <label for="pairingCode" style="font-size: 14px; font-weight: bold; color: #9CC6F7; display: block; margin-bottom: 5px;">Room ID:</label>
-            <input type="text" id="pairingCode" placeholder="0032" maxlength="4" style="padding: 8px; font-size: 16px; font-weight: bold; border-radius: 5px; border: none; outline: none; background: #000; color: #fff; text-align: center; width: 120px; font-family: monospace; text-transform: uppercase; height: 37px; box-sizing: border-box;">
+            <label for="pairingCode" style="font-size: 15px; font-weight: bold; color: #9CC6F7; display: block; margin-bottom: 5px;">Room ID:</label>
+            <input type="text" id="pairingCode" placeholder="----" maxlength="4" style="padding: 8px; font-size: 15px; font-weight: bold; border-radius: 5px; border: none; outline: none; background: #000; color: #fff; text-align: center; width: 80px; font-family: monospace; text-transform: uppercase; height: 37px; box-sizing: border-box;">
             <span id="cloudStatus" style="font-size: 12px; display: block; margin-top: 5px; color: #FFBD63;">Connecting...</span>
         </div>
 
@@ -69,12 +69,12 @@
         const mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt');
 
         mqttClient.on('connect', () => {
-            cloudStatus.innerText = "Ready to join";
+            cloudStatus.innerText = "Online";
             cloudStatus.style.color = "#52C618";
         });
 
         mqttClient.on('error', () => {
-            cloudStatus.innerText = "Cloud offline";
+            cloudStatus.innerText = "Offline";
             cloudStatus.style.color = "#FF0808";
         });
 
