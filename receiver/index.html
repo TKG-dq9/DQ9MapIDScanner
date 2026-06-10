@@ -10,26 +10,26 @@
 
     <div style="margin: 20px auto; display: inline-block;">
         
-        <div style="background: #313131; border: 1px dashed #9CC6F7; display: inline-block; padding: 15px 20px; border-radius: 10px; margin-right: 15px; vertical-align: middle; text-align: left;">
+        <div style="background: #222; display: inline-block; padding: 15px 20px; border-radius: 10px; margin-right: 15px; vertical-align: middle; text-align: center;">
             <label for="modeSelect" style="font-size: 15px; font-weight: bold; letter-spacing: 1px; color: #9CC6F7; display: block; margin-bottom: 10px;">Mode:</label>
-            <select id="modeSelect" style="padding: 8px; font-size: 14px; font-weight: bold; border-radius: 5px; border: 1px solid #555; background: #222; color: #fff; font-family: monospace; width: 150px;">
+            <select id="modeSelect" style="padding: 8px; font-size: 14px; font-weight: bold; border-radius: 5px; background: #222; color: #fff; font-family: monospace; width: 150px;">
                 <option value="scanner">Scanner</option>
                 <option value="receiver" selected>Receiver</option> </select>
             </select>
         </div>
 
-        <div style="background: #313131; border: 1px dashed #9CC6F7; display: inline-block; padding: 15px 40px; border-radius: 10px; vertical-align: middle;">
+        <div style="background: #222; display: inline-block; padding: 15px 40px; border-radius: 10px; vertical-align: middle;">
             <span style="font-size: 15px; font-weight: bold; letter-spacing: 1px; color: #9CC6F7; display: block;">Room ID:</span>
-            <span id="codeDisplay" style="font-size: 48px; font-weight: bold; font-family: monospace; color: #fff; letter-spacing: 4px;">----</span>
+            <span id="codeDisplay" style="font-size: 40px; font-weight: bold; font-family: monospace; color: #fff; letter-spacing: 4px;">----</span>
         </div>
 
     </div>
 
-    <div style="max-width: 700px; margin: 30px auto 0 auto; background: #313131; padding: 15px; border-radius: 8px; border: 1px solid #444;">
+    <div style="max-width: 700px; margin: 30px auto 0 auto; background: #222; padding: 15px; border-radius: 8px;">
         <table style="width: 100%; border-collapse: collapse; text-align: center; margin: 0 auto; font-family: monospace; font-size: 15px;">
             <thead>
                <tr style="border-bottom: 2px solid #555; color: #fff;">
-                     <th style="padding: 10px;">#</th><th>FQ</th><th>Rank</th><th>Seed</th><th>@</th><th>Grotto Searcher</th><th>yab's DQ9 Tools</th>
+                     <th style="padding: 10px;">#</th><th>Rank</th><th>Seed</th><th>@</th><th>Grotto Searcher</th><th>yab's DQ9 Tools</th>
                </tr>
             </thead>
             <tbody id="pcLogBody"></tbody>
@@ -61,7 +61,6 @@
             
             row.innerHTML = `
                 <td>${data.scanCount}</td>
-                <td>${data.fqHex}</td>
                 <td>${data.catHex}</td>
                 <td>${data.seedHex}</td>
                 <td>${data.locHex}</td>
