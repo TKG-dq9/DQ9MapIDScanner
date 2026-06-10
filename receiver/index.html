@@ -45,9 +45,6 @@
         const pcLogBody = document.getElementById("pcLogBody");
         const alertPanel = document.getElementById("alertPanel");
         const alertTitle = document.getElementById("alertTitle");
-        const mapIdDisplay = document.getElementById("mapIdDisplay");
-        const rankDisplay = document.getElementById("rankDisplay");
-        const locDisplay = document.getElementById("locDisplay");
         const btnGrotto = document.getElementById("btnGrotto");
         const btnYabd = document.getElementById("btnYabd");
 
@@ -70,20 +67,19 @@
             const data = JSON.parse(message.toString());
             
             if (firstScan) {
-                if (placeholderRow) placeholderRow.remove();
+                pcLogBody.innerHTML = "";
                 firstScan = false;
             }
 
-            // Update the prominent notification panel
+            // Update the new stylized panel
             alertTitle.innerText = `New Map Detected (Scan #${data.scanCount})`;
-            mapIdDisplay.innerText = `${data.catHex}${data.seedHex}`;
-            rankDisplay.innerText = data.fqHex;
-            locDisplay.innerText = data.locHex;
+            mapSummaryDisplay.innerText = `${data.catHex} ${data.seedHex} @ ${data.locHex}`;
+            
             btnGrotto.href = data.grottoUrl;
             btnYabd.href = data.yabdUrl;
             alertPanel.style.display = "block";
 
-            // Add item to the rolling table below
+            // Add item to the rolling table
             const row = pcLogBody.insertRow(0);
             row.style.borderBottom = "1px solid #333";
             row.style.height = "40px";
@@ -93,7 +89,6 @@
                 <td>${data.catHex}${data.seedHex}</td>
                 <td>${data.locHex}</td>
                 <td>${data.fqHex}</td>
-                <td>
                 <td><a href="${data.grottoUrl}" target="_blank" style="color:#00bcd4; text-decoration:none;">Link</a></td>
                 <td><a href="${data.yabdUrl}" target="_blank" style="color:#00bcd4; text-decoration:none;">Link</a></td>
             `;
