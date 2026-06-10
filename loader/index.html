@@ -219,6 +219,10 @@ document.getElementById("saveBtn").addEventListener("click", () =>
 
     const mapId = fqHex + seedHex + locHex;
 
+    const link = document.createElement("a");
+
+    link.download = `DQ9MapID_${mapId}.png`;
+
     link.href = canvas.toDataURL("image/png");
 
     link.click();
