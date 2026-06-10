@@ -15,6 +15,7 @@
             <select id="modeSelect" style="padding: 8px; font-size: 15px; font-weight: bold; border-radius: 5px; border: none; outline: none; background: #000; color: #fff; font-family: monospace; width: 100px; text-align: center;">
                 <option value="scanner">Scanner</option>
                 <option value="receiver" selected>Receiver</option>
+                <option value="loader">Loader</option>
             </select>
         </div>
 
@@ -72,9 +73,22 @@
 
         // Switch pages based on dropdown selection
         document.getElementById("modeSelect").addEventListener("change", (e) => {
-            if (e.target.value === "scanner") {
+
+            if (e.target.value === "scanner")
+            {
                 window.location.href = "../index.html";
             }
+
+            if (e.target.value === "receiver")
+            {
+                window.location.href = "index.html";
+            }
+
+            if (e.target.value === "loader")
+            {
+                window.location.href = "../loader/index.html";
+            }
+
         });
         
     </script>
