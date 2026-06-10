@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DQ9 Map Receiver Dashboard</title>
+    <title>DQ9MapIDReceiver</title>
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
 <body style="font-family: sans-serif; background: #1a1a1a; color: #fff; margin: 0; padding: 20px; text-align: center;">
 
-    <h1 style="color: #00bcd4; margin-bottom: 5px;">⚔️ DQ9 Live Grotto Receiver </h1>
-    <p style="color: #aaa; margin-top: 0;">Keep this page open on your computer while scanning with your phone.</p>
-
     <div style="background: #2a2a2a; border: 2px dashed #00bcd4; display: inline-block; padding: 15px 40px; border-radius: 10px; margin: 20px auto;">
-        <span style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; display: block;">Your Phone Pairing Code</span>
+        <span style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; display: block;">Room ID</span>
         <span id="codeDisplay" style="font-size: 48px; font-weight: bold; font-family: monospace; color: #fff; letter-spacing: 4px;">----</span>
     </div>
 
-    <div id="alertPanel" style="max-width: 500px; margin: 20px auto; background: #333; padding: 20px; border-radius: 10px; border-left: 5px solid #ff9800; display: none; text-align: left;">
-        <h3 style="margin-top:0; color: #ff9800;">🎯 New Map Detected!</h3>
-        <p style="font-family: monospace; font-size: 16px; margin: 5px 0;"><strong>Seed ID:</strong> <span id="mapIdDisplay" style="color:#00bcd4;"></span></p>
-        <p style="font-family: monospace; font-size: 14px; margin: 5px 0;">Rank: <span id="rankDisplay"></span> | Loc: <span id="locDisplay"></span></p>
+    <div id="alertPanel" style="max-width: 500px; margin: 20px auto; background: #333; padding: 20px; border-radius: 10px; border-left: 5px solid #ff9800; display: none; text-align: left; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+        <h3 style="margin-top:0; margin-bottom: 5px; color: #ff9800; font-size: 16px;">New Map Detected</h3>
+        
+        <p id="mapSummaryDisplay" style="font-family: monospace; font-size: 32px; font-weight: bold; margin: 15px 0; color: #00bcd4; letter-spacing: 2px; text-align: center; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; border: 1px solid #444;">
+           -- ---- @ --
+        </p>
+        
         <div style="margin-top: 15px; display: flex; gap: 10px;">
-            <a id="btnGrotto" href="#" target="_blank" style="flex:1; text-align:center; background:#00bcd4; color:#fff; padding: 10px; border-radius:5px; text-decoration:none; font-weight:bold;">Open Grotto Searcher</a>
-            <a id="btnYabd" href="#" target="_blank" style="flex:1; text-align:center; background:#4CAF50; color:#fff; padding: 10px; border-radius:5px; text-decoration:none; font-weight:bold;">Open Yabd App</a>
+            <a id="btnGrotto" href="#" target="_blank" style="flex:1; text-align:center; background:#00bcd4; color:#fff; padding: 12px; border-radius:5px; text-decoration:none; font-weight:bold; font-size: 14px;">Grotto Searcher</a>
+            <a id="btnYabd" href="#" target="_blank" style="flex:1; text-align:center; background:#4CAF50; color:#fff; padding: 12px; border-radius:5px; text-decoration:none; font-weight:bold; font-size: 14px;">yab's DQ9 Tools</a>
         </div>
     </div>
 
@@ -31,11 +31,11 @@
         <table style="width: 100%; border-collapse: collapse; text-align: center; font-family: monospace; font-size: 14px;">
             <thead>
                 <tr style="border-bottom: 2px solid #555; color: #aaa;">
-                    <th style="padding: 10px;">FQ</th><th>Rank</th><th>Seed</th><th>Location</th><th>Tools</th>
+                    <th style="padding: 10px;">FQ</th><th>Rank</th><th>Seed</th><th>@</th><th>Tools</th><th>Tools</th>
                 </tr>
             </thead>
             <tbody id="pcLogBody">
-                <tr><td colspan="5" style="padding: 20px; color: #666;">No maps scanned yet. Enter your code on your phone to link them!</td></tr>
+                <tr><td colspan="5" style="padding: 20px; color: #666;">No maps scanned.</td></tr>
             </tbody>
         </table>
     </div>
@@ -85,13 +85,13 @@
             const row = pcLogBody.insertRow(0);
             row.style.borderBottom = "1px solid #333";
             row.innerHTML = `
-                <td style="padding: 10px; color:#ff9800;">${data.fqHex}</td>
+                <td>${data.fqHex}</td>
                 <td>${data.catHex}</td>
-                <td style="color:#00bcd4;">${data.seedHex}</td>
-                <td>${data.locHex}</td>
+                <td>${data.seedHex}</td>
+                <td${data.locHex}</td>
                 <td>
-                    <a href="${data.grottoUrl}" target="_blank" style="color:#00bcd4; margin-right:10px;">Grotto</a>
-                    <a href="${data.yabdUrl}" target="_blank" style="color:#4CAF50;">Yabd</a>
+                    <a href="${data.grottoUrl}" target="_blank" style="color:#00bcd4; margin-right:10px;">Link</a>
+                    <a href="${data.yabdUrl}" target="_blank" style="color:#00bcd4;">Link</a>
                 </td>
             `;
 
